@@ -36,3 +36,31 @@ Thumbs.db
 # Cache
 .cache/
 .eslintcache
+
+# Backup files
+*.bak
+
+# Local history
+.history/
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Temporary
+*.tmp
+*.temp
+
+# Firebase Emulator
+.firebase/
+
+# Build cache
+.turbo/

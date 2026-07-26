@@ -10,6 +10,8 @@ import ReviewSubmitModal       from '@/components/reviews/ReviewSubmitModal'
 import LazyImage from '@/components/ui/LazyImage'
 import { aggregateRatingSchema, breadcrumbSchema, buildMetadata } from '@/lib/seo'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://upbeatheart.com'
+
 export const revalidate = 1800 // 30 min
 
 /* ── Metadata ── */
@@ -170,8 +172,8 @@ export default async function ReviewsPage() {
   })
 
   const breadcrumbLd = breadcrumbSchema([
-    { name: 'Home',    url: 'https://upbeatheart.com/' },
-    { name: 'Reviews', url: 'https://upbeatheart.com/reviews' },
+    { name: 'Home',    url: `${SITE_URL}/` },
+    { name: 'Reviews', url: `${SITE_URL}/reviews` },
   ])
 
   return (

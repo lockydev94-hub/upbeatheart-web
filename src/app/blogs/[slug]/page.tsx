@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     title:       blog.seo?.metaTitle || blog.title,
     description: blog.seo?.metaDescription || blog.excerpt,
     path:        `/blogs/${params.slug}`,
-    canonical:   blog.seo?.canonical ? blog.seo.canonical.replace('https://upbeatheart.com', '') : undefined,
+    canonical:   blog.seo?.canonical ? blog.seo.canonical.replace(process.env.NEXT_PUBLIC_SITE_URL || 'https://upbeatheart.com', '') : undefined,
     image:       blog.coverImage || settings.ogImageUrl,
     imageAlt:    blog.title,
     settings,
