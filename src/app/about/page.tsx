@@ -11,7 +11,7 @@ import { physicianSchema, medicalOrgSchema, breadcrumbSchema, buildMetadata } fr
 import { cloudinaryPortrait } from '@/lib/cloudinary'
 import type { SiteSettings } from '@/types/firestore'
 
-export const revalidate = 3600
+export const revalidate = 60  // ISR safety net; on-demand bust via revalidateTag("settings")
 
 export async function generateMetadata() {
   const s = await getSiteSettings()

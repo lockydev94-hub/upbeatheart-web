@@ -8,6 +8,7 @@ import { getAdminDb } from '@/lib/firebase-admin'
 import { sanitizeForClient } from '@/lib/sanitize'
 import { cld } from '@/lib/cloudinary'
 import type { SiteSettings, ClinicHour } from '@/types/firestore'
+import { unstable_cache } from 'next/cache'
 
 const DEFAULT_HOURS: ClinicHour[] = [
   { day: 'Monday',    open: '09:00', close: '17:00', closed: false },
@@ -85,12 +86,9 @@ const DEFAULT_SETTINGS: SiteSettings = {
 }
 
 
-let cachedSettings: SiteSettings | null = null
-let cacheTime = 0
-const CACHE_TTL = 60_000 // 60 seconds
 
-export async function getSiteSettings(): Promise<SiteSettings> {
-  if (cachedSettings && Date.now() - cacheTime < CACHE_TTL) return cachedSettings
+// ── Internal fetcher — called by the unstable_cache wrapper below ──────────
+async function _fetchSettings(): Promise<SiteSettings> {
   try {
     const db   = getAdminDb()
     const snap = await db.collection('settings').doc('site').get()
@@ -124,7 +122,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
     // Pre-transform Cloudinary URLs to correctly-sized variants
     // so next/image never has to download a multi-MB raw file
-    cachedSettings = {
+    return {
       ...raw2,
       logoUrl:        cld.logo(raw2.logoUrl),
       faviconUrl:     cld.favicon(raw2.faviconUrl),
@@ -135,9 +133,16 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       // Pre-transforming here caused double-transform stacking → tiny blurry photo.
       doctorPhotoUrl: raw2.doctorPhotoUrl ?? '',
     }
-    cacheTime = Date.now()
-    return cachedSettings
   } catch {
     return DEFAULT_SETTINGS
   }
 }
+
+// ── Public export — cached by Next.js, busted by revalidateTag('settings') ─
+// revalidate: 60  → ISR fallback if on-demand bust never fires
+// tags: ['settings'] → admin API route calls revalidateTag('settings') on save
+export const getSiteSettings = unstable_cache(
+  _fetchSettings,
+  ['site-settings'],
+  { revalidate: 60, tags: ['settings'] },
+)

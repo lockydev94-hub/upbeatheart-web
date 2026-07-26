@@ -3,7 +3,7 @@ import { getApprovedNGOs } from '@/lib/firestore/ngos'
 import { getSiteSettings } from '@/lib/firestore/settings'
 import NGOPageClient       from '@/components/ngo/NGOPageClient'
 
-export const revalidate = 3600
+export const revalidate = 60  // settings data — busted by revalidateTag("settings")
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings()

@@ -4,7 +4,7 @@ import FAQPageClient         from './_FAQPageClient'
 import type { Metadata }     from 'next'
 import { faqSchema, buildMetadata } from '@/lib/seo'
 
-export const revalidate = 3600
+export const revalidate = 60  // settings data — busted by revalidateTag("settings")
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings()

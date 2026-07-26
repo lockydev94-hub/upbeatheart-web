@@ -3,7 +3,7 @@ import { localBusinessSchema, buildMetadata } from '@/lib/seo'
 import ContactPageClient from './_ContactPageClient'
 import type { Metadata } from 'next'
 
-export const revalidate = 3600
+export const revalidate = 60  // settings data — busted by revalidateTag("settings")
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings()
