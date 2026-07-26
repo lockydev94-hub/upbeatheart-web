@@ -8,7 +8,7 @@ import type { SiteSettings, Disease, Blog } from '@/types/firestore'
 import { cld } from '@/lib/cloudinary'
 import {
   Phone, Menu, X, ChevronDown, ChevronRight,
-  Calendar, Stethoscope, BookOpen, Heart, Users,
+  Calendar, BookOpen, Heart, Users,
   Image as ImageIcon, Star, HelpCircle, Mail,
   ArrowRight, Tag,
 } from 'lucide-react'
@@ -72,8 +72,8 @@ function useClampedDropdown(open: boolean) {
   return { wrapRef, dropRef, style }
 }
 
-/* ── Treatments mega-menu ── */
-function TreatmentsMegaMenu({
+/* ── Diseases mega-menu ── */
+function DiseasesMegaMenu({
   diseases, isActive, open,
 }: { diseases: Disease[]; isActive: (h: string) => boolean; open: boolean }) {
   const col1 = diseases.slice(0, 3)
@@ -92,9 +92,9 @@ function TreatmentsMegaMenu({
           {/* header */}
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-secondary/60">
-              Treatments & Conditions
+              Diseases & Conditions
             </p>
-            <Link href="/treatments"
+            <Link href="/diseases"
               className="flex items-center gap-1 text-xs font-bold text-primary hover:underline">
               View All <ArrowRight size={11} />
             </Link>
@@ -141,16 +141,10 @@ function TreatmentsMegaMenu({
 
           {/* footer strip */}
           <div className="border-t border-border/50 pt-3.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Link href="/treatments"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/8 text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-all">
-                <Stethoscope size={11} /> All Treatments
-              </Link>
-              <Link href="/diseases"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-text-secondary text-xs font-semibold hover:bg-primary/8 hover:text-primary transition-all border border-border/60">
-                <Heart size={11} /> All Diseases
-              </Link>
-            </div>
+            <Link href="/diseases"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/8 text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-all">
+              <Heart size={11} /> All Diseases
+            </Link>
             <Link href="/appointment"
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-white gradient-primary shadow-sm hover:shadow-md transition-shadow">
               <Calendar size={11} /> Book Now
@@ -414,19 +408,19 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
                 </Link>
               ))}
 
-              {/* Treatments */}
+              {/* Diseases */}
               <div className="relative">
-                <button onClick={() => toggle('Treatments')}
+                <button onClick={() => toggle('Diseases')}
                   className={`flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    openDrop === 'Treatments' || isActive('/treatments') || isActive('/diseases')
+                    openDrop === 'Diseases' || isActive('/diseases')
                       ? 'text-primary bg-primary/8'
                       : 'text-text-primary hover:text-primary hover:bg-primary/5'
                   }`}>
-                  Treatments
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDrop === 'Treatments' ? 'rotate-180' : ''}`} />
+                  Diseases
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${openDrop === 'Diseases' ? 'rotate-180' : ''}`} />
                 </button>
-                {openDrop === 'Treatments' && (
-                  <TreatmentsMegaMenu diseases={diseases} isActive={isActive} open={openDrop === 'Treatments'} />
+                {openDrop === 'Diseases' && (
+                  <DiseasesMegaMenu diseases={diseases} isActive={isActive} open={openDrop === 'Diseases'} />
                 )}
               </div>
 
@@ -553,18 +547,15 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
               </Link>
             ))}
 
-            {/* Treatments mobile */}
+            {/* Diseases mobile */}
             <div>
-              <button onClick={() => toggle('Treatments')}
+              <button onClick={() => toggle('Diseases')}
                 className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-semibold text-text-primary hover:bg-primary/5 hover:text-primary transition-colors">
-                Treatments
-                <ChevronDown size={14} className={`transition-transform ${openDrop === 'Treatments' ? 'rotate-180' : ''}`} />
+                Diseases
+                <ChevronDown size={14} className={`transition-transform ${openDrop === 'Diseases' ? 'rotate-180' : ''}`} />
               </button>
-              {openDrop === 'Treatments' && (
+              {openDrop === 'Diseases' && (
                 <div className="ml-3 mb-1 border-l-2 border-border pl-3 space-y-0.5">
-                  <Link href="/treatments" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-primary transition-colors">
-                    <Stethoscope size={13} /><span className="font-medium">All Treatments</span>
-                  </Link>
                   <Link href="/diseases" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-primary transition-colors">
                     <Heart size={13} /><span className="font-medium">All Diseases</span>
                   </Link>

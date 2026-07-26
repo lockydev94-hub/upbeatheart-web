@@ -8,7 +8,6 @@ interface FooterProps { settings: SiteSettings }
 
 // ── Navigation columns ────────────────────────────────────────────────────────
 const SERVICES = [
-  { label: 'Cardiology Treatments',   href: '/treatments' },
   { label: 'Diseases & Conditions',   href: '/diseases' },
   { label: 'Patient Assistance',       href: '/patient-assistance' },
   { label: 'Book Appointment',         href: '/appointment' },
