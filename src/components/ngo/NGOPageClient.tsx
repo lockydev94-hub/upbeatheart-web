@@ -197,7 +197,7 @@ function NGOCard({ ngo }: { ngo: NGO }) {
       <div className="p-6">
         {/* logo + verified */}
         <div className="flex items-start justify-between mb-4">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-bg border border-border flex items-center justify-center shrink-0">
+          <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-bg border border-border flex items-center justify-center shrink-0">
             {ngo.logoUrl ? (
               <LazyImage
                 src={ngo.logoUrl}
