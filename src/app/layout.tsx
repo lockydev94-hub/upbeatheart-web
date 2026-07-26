@@ -7,6 +7,7 @@ import { getPublishedBlogs } from '@/lib/firestore/blogs'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import ChatWidget from '@/components/ui/ChatWidget'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -44,6 +45,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const navBlogs    = allBlogs.slice(0, 6)
   return (
     <html lang="en" className={jakarta.variable}>
+      <head>
+        <GoogleAnalytics gaId={settings.gaId} />
+      </head>
       <body className="font-sans antialiased bg-bg text-text-primary">
         <Navbar settings={settings} diseases={navDiseases} blogs={navBlogs} />
         <main>{children}</main>
