@@ -1,0 +1,18 @@
+# Auto detect text files
+* text=auto
+
+# Force LF for Linux scripts
+*.sh text eol=lf
+
+# Source files
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+*.json text
+*.css text
+*.scss text
+*.html text
+*.md text
+*.yml text
+*.yaml text
