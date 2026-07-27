@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Images, Play, X, ChevronLeft, ChevronRight,
   ZoomIn, Video, ImageIcon, Download, ExternalLink,
@@ -222,7 +223,7 @@ function Lightbox({ items, index, onClose, onGoto }: LightboxProps) {
                   : it.thumbnailUrl || null
                 return thumb ? (
                   <div className="relative w-full h-full">
-                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                    <Image src={thumb} alt="" fill className="object-cover" sizes="56px" unoptimized={thumb.includes('img.youtube.com')} />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                       <Play size={10} className="fill-white text-white" />
                     </div>
@@ -273,11 +274,13 @@ function GalleryCard({ item, aspectClass, onClick }: CardProps) {
 
         return thumbSrc ? (
           <div className="absolute inset-0 w-full h-full overflow-hidden">
-            <img
+            <Image
               src={thumbSrc}
               alt={item.caption}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-75"
-              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-75"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              unoptimized={thumbSrc.includes('img.youtube.com')}
             />
             {/* Play overlay */}
             <div className="absolute inset-0 flex items-center justify-center">
