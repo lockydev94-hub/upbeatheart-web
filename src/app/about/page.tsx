@@ -63,56 +63,54 @@ function PhysicianSchema({ s }: { s: SiteSettings }) {
 
 // ── Static content (can be extended from Firestore later) ─────────────────────
 const ACHIEVEMENTS = [
-  { icon: Users,       value: '10,000+', label: 'Patients Treated'     },
-  { icon: Calendar,    value: '15+',     label: 'Years Experience'      },
-  { icon: Award,       value: '20+',     label: 'Awards & Recognitions' },
-  { icon: BookOpen,    value: '30+',     label: 'Research Publications' },
+  { icon: Users,       value: '5,000+',  label: 'Patients Treated'     },
+  { icon: Calendar,    value: '10+',     label: 'Years Experience'      },
+  { icon: Award,       value: '1',       label: 'Gold Medal Award'      },
+  { icon: BookOpen,    value: '20+',     label: 'Research Publications' },
 ]
 
 const QUALIFICATIONS = [
   {
     degree: 'MBBS',
-    institution: 'Osmania Medical College, Hyderabad',
-    year: '2003',
+    institution: 'MKCG Medical College, Berhampur',
+    year: '',
     icon: GraduationCap,
   },
   {
-    degree: 'MD — Internal Medicine',
-    institution: 'Nizam\'s Institute of Medical Sciences',
-    year: '2007',
+    degree: 'DNB — Paediatrics',
+    institution: 'Tata Main Hospital, Jamshedpur',
+    year: '',
     icon: BookOpen,
   },
   {
-    degree: 'DM — Cardiology',
-    institution: 'Sri Venkateswara Institute of Medical Sciences',
-    year: '2010',
+    degree: 'FNB — Paediatric Cardiology',
+    institution: 'Frontier Lifeline (Dr. KM Cherian Heart Foundation) Hospital & Rabindranath Tagore International Institute of Cardiac Sciences, Chennai',
+    year: '',
     icon: Stethoscope,
   },
 ]
 
 const EXPERTISE = [
-  { icon: Activity,    title: 'Interventional Cardiology', desc: 'Angioplasty, stenting, cardiac catheterisation and complex PCI procedures.' },
-  { icon: Heart,       title: 'Heart Failure Management',  desc: 'Advanced management of acute and chronic heart failure with latest protocols.' },
-  { icon: Microscope,  title: 'Electrophysiology',         desc: 'Arrhythmia diagnosis, ablation therapy, and device implantation.' },
-  { icon: Shield,      title: 'Preventive Cardiology',     desc: 'Risk stratification, lifestyle counselling and preventive programmes.' },
-  { icon: Globe,       title: 'Community Outreach',        desc: 'Free cardiac screening camps and NGO partnerships for underserved communities.' },
-  { icon: Users,       title: 'Patient Assistance',        desc: 'Connecting financially weak cardiac patients with donors and NGO support.' },
+  { icon: Heart,       title: 'Device Closure — ASD / VSD / PDA', desc: 'Minimally invasive catheter-based closure of atrial septal defects, ventricular septal defects, and patent ductus arteriosus.' },
+  { icon: Activity,    title: 'Balloon Valvuloplasty',             desc: 'Balloon pulmonary valvuloplasty and balloon aortic valvuloplasty for congenital valve stenosis in children.' },
+  { icon: Stethoscope, title: 'Stenting for CoArctation',          desc: 'Stenting of coarctation segment to restore normal aortic blood flow in paediatric patients.' },
+  { icon: Microscope,  title: 'Coil Embolization',                 desc: 'Coil embolization of major aortopulmonary collateral arteries (MAPCAs) in complex cyanotic heart diseases.' },
+  { icon: Shield,      title: 'Diagnostic Catheterization',        desc: 'Preoperative diagnostic cardiac catheterization for Glenn shunt, Fontan surgeries, and complex cyanotic congenital heart diseases.' },
+  { icon: Globe,       title: 'Rare Defect Closures',              desc: 'Closure of aorta to right atrial tunnel, ruptured sinus of Valsalva, and pulmonary arteriovenous fistula.' },
 ]
 
 const MEMBERSHIPS = [
-  'Cardiological Society of India (CSI)',
   'Indian Medical Association (IMA)',
-  'European Society of Cardiology (ESC)',
-  'American College of Cardiology (ACC)',
-  'Heart Failure Society of India (HFSI)',
+  'Paediatric Cardiac Society of India (PCSI)',
+  'Congenital Heart Surgeons\' Society (CHSS)',
+  'Association of Physicians of India (API)',
+  'SAIL Medical Officers\' Association',
 ]
 
 const AWARDS = [
-  { year: '2023', title: 'Best Cardiologist — Telangana State Medical Awards' },
-  { year: '2022', title: 'Excellence in Patient Care — CARE Hospitals' },
-  { year: '2021', title: 'Community Healthcare Champion — Health Ministry' },
-  { year: '2019', title: 'Outstanding Physician Award — IMA' },
-  { year: '2017', title: 'Young Cardiologist Award — CSI Annual Conference' },
+  { year: '🥇', title: 'Gold Medal — Best MBBS Paper, 30th All India Steel Medical Officer\'s Conference, SAIL-VISL Hospital' },
+  { year: '📄', title: 'Numerous research papers, presentations and certifications in Paediatric Cardiology' },
+  { year: '🏥', title: 'Expert in interventional paediatric cardiology — complex cyanotic congenital heart diseases' },
 ]
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -334,17 +332,17 @@ export default async function AboutPage() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#18B55A]/8 border border-[#18B55A]/20 text-[#18B55A] text-[11px] font-bold uppercase tracking-widest mb-4">
               <Stethoscope size={11} />
-              Clinical Expertise
+              Paediatric Cardiology
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-[#143B7D]">
-              Areas of{' '}
+              Fields of{' '}
               <span className="bg-clip-text text-transparent"
                 style={{ backgroundImage: 'linear-gradient(90deg,#1565D8,#18B8E6,#18B55A)' }}>
-                Specialisation
+                Expertise
               </span>
             </h2>
             <p className="text-[#6B7280] mt-3 max-w-xl mx-auto">
-              Delivering comprehensive cardiac care through evidence-based practice and compassionate treatment.
+              Delivering expert interventional paediatric cardiac care through evidence-based practice and compassionate treatment of children with congenital heart disease.
             </p>
           </div>
 

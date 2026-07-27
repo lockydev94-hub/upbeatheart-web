@@ -55,9 +55,9 @@ const ACHIEVEMENTS = [
 ]
 
 const QUALIFICATIONS = [
-  { degree: 'MBBS',              institution: 'Osmania Medical College, Hyderabad',          year: '2003', icon: GraduationCap, color: 'from-primary to-cyan' },
-  { degree: 'MD — Internal Medicine', institution: "Nizam's Institute of Medical Sciences", year: '2007', icon: BookOpen,      color: 'from-cyan to-green' },
-  { degree: 'DM — Cardiology',   institution: 'Sri Venkateswara Institute of Medical Sciences', year: '2010', icon: Stethoscope,  color: 'from-green to-primary' },
+  { degree: 'MBBS',                      institution: 'MKCG Medical College, Berhampur',                                                                                          year: '',     icon: GraduationCap, color: 'from-primary to-cyan' },
+  { degree: 'DNB — Paediatrics',         institution: 'Tata Main Hospital, Jamshedpur',                                                                                              year: '',     icon: BookOpen,      color: 'from-cyan to-green' },
+  { degree: 'FNB — Paediatric Cardiology', institution: 'Frontier Lifeline (Dr. KM Cherian Heart Foundation) Hospital & Rabindranath Tagore International Institute of Cardiac Sciences, Chennai', year: '', icon: Stethoscope,  color: 'from-green to-primary' },
 ]
 
 const EXPERTISE = [
