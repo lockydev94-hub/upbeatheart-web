@@ -31,6 +31,20 @@ const ASPECTS = [
   'aspect-[4/3]',    // standard landscape
 ]
 
+// ── YouTube helper ────────────────────────────────────────────────────────────
+function getYouTubeId(url: string): string | null {
+  if (!url) return null
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ]
+  for (const p of patterns) {
+    const m = url.match(p)
+    if (m) return m[1]
+  }
+  return null
+}
+
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 interface LightboxProps {
   items: GalleryItem[]
@@ -129,13 +143,29 @@ function Lightbox({ items, index, onClose, onGoto }: LightboxProps) {
           onClick={e => e.stopPropagation()}
         >
           {item.type === 'video' ? (
-            <video
-              key={item.id}
-              src={item.url}
-              controls
-              autoPlay
-              className="max-h-[65vh] w-full rounded-2xl object-contain shadow-2xl"
-            />
+            (() => {
+              const ytId = getYouTubeId(item.url)
+              return ytId ? (
+                <div className="w-full aspect-video max-h-[65vh]">
+                  <iframe
+                    key={item.id}
+                    src={`https://www.youtube.com/embed/${ytId}?autoplay=1`}
+                    className="w-full h-full rounded-2xl"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={item.caption}
+                  />
+                </div>
+              ) : (
+                <video
+                  key={item.id}
+                  src={item.url}
+                  controls
+                  autoPlay
+                  className="max-h-[65vh] w-full rounded-2xl object-contain shadow-2xl"
+                />
+              )
+            })()
           ) : (
             <div className="relative max-w-full w-full" style={{ minHeight: '200px', maxHeight: '65vh' }}>
               <LazyImage
@@ -185,11 +215,24 @@ function Lightbox({ items, index, onClose, onGoto }: LightboxProps) {
                   : 'opacity-40 hover:opacity-70'
               }`}
             >
-              {it.type === 'video' ? (
-                <div className="w-full h-full bg-[#1565D8]/40 flex items-center justify-center">
-                  <Play size={14} className="fill-white text-white" />
-                </div>
-              ) : (
+              {it.type === 'video' ? (() => {
+                const ytId = getYouTubeId(it.url)
+                const thumb = ytId
+                  ? `https://img.youtube.com/vi/${ytId}/default.jpg`
+                  : it.thumbnailUrl || null
+                return thumb ? (
+                  <div className="relative w-full h-full">
+                    <img src={thumb} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Play size={10} className="fill-white text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-[#1565D8]/40 flex items-center justify-center">
+                    <Play size={14} className="fill-white text-white" />
+                  </div>
+                )
+              })() : (
                 <LazyImage src={it.url} alt="" rootMargin="0px" className="absolute inset-0 w-full h-full object-cover" />
               )}
             </button>
@@ -221,13 +264,36 @@ function GalleryCard({ item, aspectClass, onClick }: CardProps) {
           revealScale
           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-      ) : (
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#143B7D] to-[#1565D8] flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Play size={28} className="fill-white text-white ml-1" />
+      ) : (() => {
+        // FIX: show YouTube thumbnail, Cloudinary thumbnail, or fallback gradient
+        const ytId = getYouTubeId(item.url)
+        const thumbSrc = ytId
+          ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+          : item.thumbnailUrl || null
+
+        return thumbSrc ? (
+          <div className="absolute inset-0 w-full h-full overflow-hidden">
+            <img
+              src={thumbSrc}
+              alt={item.caption}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-75"
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+            />
+            {/* Play overlay */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300 ${ytId ? 'bg-red-600' : 'bg-black/60'}`}>
+                <Play size={24} className="fill-white text-white ml-1" />
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#143B7D] to-[#1565D8] flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <Play size={28} className="fill-white text-white ml-1" />
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
