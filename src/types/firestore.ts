@@ -73,17 +73,20 @@ export interface SiteSettings {
 
   // ── Home Page Section Visibility ────────────────────────────────────────────
   homeSections: {
-    hero:        boolean
-    stats:       boolean
-    video:       boolean
-    diseases:    boolean
-    campaigns:   boolean
-    ngo:         boolean
-    blogs:       boolean
-    gallery:     boolean
-    reviews:     boolean
-    donate:      boolean
-    appointment: boolean
+    hero:            boolean
+    stats:           boolean
+    govSchemes:      boolean
+    video:           boolean
+    diseases:        boolean
+    myths:           boolean
+    cardiologyTypes: boolean
+    campaigns:       boolean
+    ngo:             boolean
+    blogs:           boolean
+    gallery:         boolean
+    reviews:         boolean
+    donate:          boolean
+    appointment:     boolean
   }
 
   chequePayableTo:     string

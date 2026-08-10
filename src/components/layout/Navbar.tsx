@@ -13,6 +13,43 @@ import {
   ArrowRight, Tag,
 } from 'lucide-react'
 
+/* ── ECG PQRST path ────────────────────────────────────────────────────────
+   A continuous, anatomically-correct ECG waveform.
+
+   Each beat is 120px wide and built from:
+     P wave   — gentle rounded bump (atrial depolarisation)
+     PR seg   — flat baseline (AV node delay)
+     QRS      — sharp Q dip → tall R spike → S undershoot (ventricular
+                depolarisation)
+     ST seg   — flat baseline (ventricles depolarised)
+     T wave   — broader rounded bump (ventricular repolarisation)
+
+   The full strip is 24 beats × 120px = 2880px, drawn 2× wider than the
+   visible header so a CSS translateX(-50%) loop produces a perfectly
+   seamless monitor-scroll animation.                                       */
+const ECG_FULL_PATH = (() => {
+  let p = 'M 0 22'
+  const N = 24, W = 120
+  for (let i = 0; i < N; i++) {
+    const x = i * W
+    /* P wave     — cubic rise/fall, peak ~4px above baseline */
+    p += ` C ${x+8},22 ${x+11},18 ${x+18},18`
+    p += ` C ${x+25},18 ${x+28},22 ${x+32},22`
+    /* PR segment — flat */
+    p += ` L ${x+42},22`
+    /* QRS        — sharp lines, R spike ~19px tall */
+    p += ` L ${x+45},25 L ${x+47},3 L ${x+50},26 L ${x+53},22`
+    /* ST segment — flat */
+    p += ` L ${x+72},22`
+    /* T wave     — cubic rise/fall, peak ~7px above baseline */
+    p += ` C ${x+77},22 ${x+80},15 ${x+86},15`
+    p += ` C ${x+92},15 ${x+95},22 ${x+99},22`
+    /* Rest       — flat baseline */
+    p += ` L ${x+120},22`
+  }
+  return p
+})()
+
 interface NavbarProps {
   settings:  SiteSettings
   diseases?: Disease[]
@@ -27,7 +64,7 @@ const MORE_LINKS = [
   { label: 'FAQ',          href: '/faq',      icon: HelpCircle,desc: 'Common questions answered'       },
 ]
 
-/* ── WhatsApp icon ── */
+/* â”€â”€ WhatsApp icon â”€â”€ */
 function WhatsAppIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size} className={className} aria-hidden>
@@ -36,7 +73,7 @@ function WhatsAppIcon({ size = 16, className = '' }: { size?: number; className?
   )
 }
 
-/* ── Hook: clamp a dropdown so it never overflows the viewport ── */
+/* â”€â”€ Hook: clamp a dropdown so it never overflows the viewport â”€â”€ */
 function useClampedDropdown(open: boolean) {
   const wrapRef  = useRef<HTMLDivElement>(null)   // the relative wrapper
   const dropRef  = useRef<HTMLDivElement>(null)   // the absolute dropdown
@@ -72,7 +109,7 @@ function useClampedDropdown(open: boolean) {
   return { wrapRef, dropRef, style }
 }
 
-/* ── Diseases mega-menu ── */
+/* â”€â”€ Diseases mega-menu â”€â”€ */
 function DiseasesMegaMenu({
   diseases, isActive, open,
 }: { diseases: Disease[]; isActive: (h: string) => boolean; open: boolean }) {
@@ -156,7 +193,7 @@ function DiseasesMegaMenu({
   )
 }
 
-/* ── Blogs mega-menu ── */
+/* â”€â”€ Blogs mega-menu â”€â”€ */
 function BlogsMegaMenu({
   blogs, isActive, open,
 }: { blogs: Blog[]; isActive: (h: string) => boolean; open: boolean }) {
@@ -233,7 +270,7 @@ function BlogsMegaMenu({
   )
 }
 
-/* ── More dropdown (4-col) ── */
+/* â”€â”€ More dropdown (4-col) â”€â”€ */
 function MoreDropdown({
   isActive, open,
 }: { isActive: (h: string) => boolean; open: boolean }) {
@@ -286,7 +323,7 @@ function MoreDropdown({
   )
 }
 
-/* ── Main Navbar ── */
+/* â”€â”€ Main Navbar â”€â”€ */
 export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarProps) {
   const [scrolled,   setScrolled]   = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -318,15 +355,15 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
   const waClean    = settings.whatsapp?.replace(/\D/g, '') || ''
 
   const announcementText = settings.appointmentsOpen
-    ? `Appointments are open${settings.doctorName ? ` — Book with ${settings.doctorName} today` : ''}`
-    : (settings.appointmentNote || 'Appointments temporarily closed — call us for enquiries')
+    ? `Appointments are open${settings.doctorName ? ` â€” Book with ${settings.doctorName} today` : ''}`
+    : (settings.appointmentNote || 'Appointments temporarily closed â€” call us for enquiries')
 
   const toggle = (label: string) =>
     setOpenDrop(prev => prev === label ? null : label)
 
   return (
     <>
-      {/* ── Slim top bar ── */}
+      {/* â”€â”€ Slim top bar â”€â”€ */}
       <div className="hidden md:block bg-navy text-white/80 text-xs py-2 border-b border-white/5">
         <div className="container-max px-4 md:px-8 flex items-center justify-between gap-4">
           <span className="flex items-center gap-2 truncate">
@@ -358,7 +395,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
         </div>
       </div>
 
-      {/* ── Main header ── */}
+      {/* â”€â”€ Main header â”€â”€ */}
       <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
         scrolled
           ? 'bg-white/95 backdrop-blur-md shadow-[0_2px_20px_rgba(21,101,216,0.08)] border-b border-border/60'
@@ -393,7 +430,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
               )}
             </Link>
 
-            {/* ── Desktop nav ── */}
+            {/* â”€â”€ Desktop nav â”€â”€ */}
             <nav ref={navRef} className="hidden lg:flex items-center gap-0.5">
 
               {/* Static links */}
@@ -492,47 +529,119 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
           </div>
         </div>
 
-        {/* ── ECG line ── */}
-        <div className="relative w-full h-[44px] overflow-visible" aria-hidden>
+        {/* ── ECG line ──
+             Realistic PQRST waveform that scrolls horizontally like a
+             hospital heart monitor. The strip is rendered 2× the visible
+             width and translated by -50% in a continuous loop so the
+             pattern is perfectly periodic and never jumps. */}
+        <div className="relative w-full h-[44px] overflow-hidden" aria-hidden>
+          {/* Subtle colour wash behind the trace */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/4 via-cyan/5 to-green/4" />
-          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ecgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stopColor="#1565D8" stopOpacity="0.12" />
-                <stop offset="45%"  stopColor="#18B8E6" stopOpacity="0.55" />
-                <stop offset="100%" stopColor="#18B55A" stopOpacity="0.12" />
-              </linearGradient>
-              <filter id="ecgGlow">
-                <feGaussianBlur stdDeviation="1.2" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <line x1="0" y1="22" x2="1440" y2="22" stroke="url(#ecgGrad)" strokeWidth="0.6" />
-            {[0,160,320,480,640,800,960,1120,1280].map(o => (
-              <polyline key={o}
-                points={`${o},22 ${o+20},22 ${o+30},22 ${o+36},6 ${o+42},38 ${o+48},22 ${o+56},22 ${o+64},13 ${o+68},31 ${o+72},22 ${o+160},22`}
-                fill="none" stroke="url(#ecgGrad)" strokeWidth="1.5"
-                strokeLinecap="round" strokeLinejoin="round" filter="url(#ecgGlow)"
-              />
-            ))}
-            <circle r="2.2" fill="#18B8E6" opacity="0.9" filter="url(#ecgGlow)">
-              <animateMotion dur="3.5s" repeatCount="indefinite"
-                path="M0,22 L20,22 L30,22 L36,6 L42,38 L48,22 L56,22 L64,13 L68,31 L72,22 L160,22 L180,22 L190,22 L196,6 L202,38 L208,22 L216,22 L224,13 L228,31 L232,22 L320,22 L340,22 L350,22 L356,6 L362,38 L368,22 L376,22 L384,13 L388,31 L392,22 L480,22 L500,22 L510,22 L516,6 L522,38 L528,22 L536,22 L544,13 L548,31 L552,22 L640,22 L660,22 L670,22 L676,6 L682,38 L688,22 L696,22 L704,13 L708,31 L712,22 L800,22 L820,22 L830,22 L836,6 L842,38 L848,22 L856,22 L864,13 L868,31 L872,22 L960,22 L980,22 L990,22 L996,6 L1002,38 L1008,22 L1016,22 L1024,13 L1028,31 L1032,22 L1120,22 L1140,22 L1150,22 L1156,6 L1162,38 L1168,22 L1176,22 L1184,13 L1188,31 L1192,22 L1280,22 L1300,22 L1310,22 L1316,6 L1322,38 L1328,22 L1336,22 L1344,13 L1348,31 L1352,22 L1440,22"
-              />
-            </circle>
-          </svg>
+
+          {/* Scrolling ECG strip — 200% wide so the -50% loop is seamless */}
+          <div className="absolute inset-y-0 left-0 w-full overflow-hidden pointer-events-none">
+            <div
+              className="absolute inset-y-0 left-0 h-full ecg-strip-anim"
+              style={{ width: '200%' }}
+            >
+              <svg
+                className="block h-full"
+                viewBox="0 0 2880 44"
+                preserveAspectRatio="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <linearGradient id="ecgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"   stopColor="#1565D8" stopOpacity="0.10" />
+                    <stop offset="22%"  stopColor="#1565D8" stopOpacity="0.95" />
+                    <stop offset="50%"  stopColor="#18B8E6" stopOpacity="1" />
+                    <stop offset="78%"  stopColor="#18B55A" stopOpacity="0.95" />
+                    <stop offset="100%" stopColor="#18B55A" stopOpacity="0.10" />
+                 </linearGradient>
+                  <filter id="ecgGlow" x="-10%" y="-60%" width="120%" height="220%">
+                    <feGaussianBlur stdDeviation="1.4" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                   </feMerge>
+                 </filter>
+               </defs>
+
+                {/* Faint baseline reference (also scrolls) */}
+                <line
+                  x1="0" y1="22" x2="2880" y2="22"
+                  stroke="rgba(120,170,255,0.18)" strokeWidth="0.6"
+                />
+
+                {/* Soft cyan halo behind the trace — gives it a CRT-like glow */}
+                <path
+                  d={ECG_FULL_PATH}
+                  fill="none"
+                  stroke="#18B8E6"
+                  strokeOpacity="0.32"
+                  strokeWidth="3.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  filter="url(#ecgGlow)"
+                />
+
+                {/* Crisp main trace on top */}
+                <path
+                  d={ECG_FULL_PATH}
+                  fill="none"
+                  stroke="url(#ecgGrad)"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+             </svg>
+           </div>
+         </div>
+
+          {/* Soft edge fades so the looping trace doesn't visibly clip */}
+          <div
+            className="absolute inset-y-0 left-0 w-24 pointer-events-none"
+            style={{ background: 'linear-gradient(to right, #ffffff, rgba(255,255,255,0))' }}
+          />
+          <div
+            className="absolute inset-y-0 right-0 w-24 pointer-events-none"
+            style={{ background: 'linear-gradient(to left, #ffffff, rgba(255,255,255,0))' }}
+          />
+
+          {/* Vertical sweep cursor — like the positive-lead sweep on a real monitor */}
+          <div
+            className="absolute inset-y-0 ecg-sweep-cursor pointer-events-none"
+            style={{
+              width: '1.5px',
+              left: '-2%',
+              background:
+                'linear-gradient(to bottom, transparent, rgba(255,255,255,0.55) 25%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.55) 75%, transparent)',
+              boxShadow: '0 0 10px 2px rgba(24,184,230,0.45)',
+              opacity: 0.7,
+            }}
+          />
+
+          {/* Heart image — centred on top of the trace */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div className="relative flex items-center justify-center" style={{ animation: 'heartbeat 1.2s ease-in-out infinite' }}>
               <span className="absolute rounded-full" style={{ width: '52px', height: '52px', background: 'radial-gradient(circle, rgba(239,68,68,0.22) 0%, transparent 70%)', animation: 'heartPing 1.2s ease-in-out infinite' }} />
+              {/* Soft white halo behind the heart so the trace passes behind cleanly */}
+              <span className="absolute rounded-full"
+                style={{
+                  width: '34px', height: '34px',
+                  background: 'rgba(255,255,255,0.92)',
+                  boxShadow: '0 0 14px 2px rgba(255,255,255,0.75)',
+                }}
+              />
               <Image src="/images/heart-image.png" alt="Heart" width={24} height={40}
                 className="relative z-10 object-contain select-none"
                 style={{ width: '24px', height: '40px', filter: 'drop-shadow(0 0 5px rgba(239,68,68,0.5)) drop-shadow(0 1px 3px rgba(0,0,0,0.12))' }}
                 priority />
-            </div>
-          </div>
-        </div>
+           </div>
+         </div>
+       </div>
 
-        {/* ── Mobile drawer ── */}
+        {/* â”€â”€ Mobile drawer â”€â”€ */}
         <div className={`lg:hidden border-t border-border/40 bg-white overflow-hidden transition-all duration-300 ${
           mobileOpen ? 'max-h-[calc(100vh-76px)] overflow-y-auto' : 'max-h-0'
         }`}>
@@ -683,6 +792,33 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
           0%   { transform: scale(0.6); opacity: 0.7; }
           50%  { transform: scale(1.4); opacity: 0.2; }
           100% { transform: scale(0.6); opacity: 0.7; }
+        }
+
+        /* ECG monitor scroll */
+        @keyframes ecgScroll {
+          from { transform: translate3d(0, 0, 0); }
+          to   { transform: translate3d(-50%, 0, 0); }
+        }
+        .ecg-strip-anim {
+          will-change: transform;
+          animation: ecgScroll 14s linear infinite;
+        }
+
+        /* Vertical sweep cursor */
+        @keyframes ecgSweep {
+          0%   { left: -2%; }
+          100% { left: 102%; }
+        }
+        .ecg-sweep-cursor {
+          will-change: left;
+          animation: ecgSweep 8s linear infinite;
+        }
+
+        /* Reduced motion respect */
+        @media (prefers-reduced-motion: reduce) {
+          .ecg-strip-anim,
+          .ecg-sweep-cursor { animation: none !important; }
+          .ecg-sweep-cursor { display: none; }
         }
       `}</style>
     </>

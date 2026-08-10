@@ -8,17 +8,20 @@ import { getApprovedNGOs }       from '@/lib/firestore/ngos'
 import { homePageGraph, buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
 
-import HeroSection       from '@/components/home/HeroSection'
-import StatsStrip        from '@/components/home/StatsStrip'
-import VideoSection      from '@/components/home/VideoSection'
-import DiseasesSection   from '@/components/home/DiseasesSection'
-import CampaignHighlight from '@/components/home/CampaignHighlight'
-import NGOSection        from '@/components/home/NGOSection'
-import BlogsPreview      from '@/components/home/BlogsPreview'
-import ReviewsCarousel   from '@/components/home/ReviewsCarousel'
-import GallerySection    from '@/components/home/GallerySection'
-import AppointmentCTA    from '@/components/home/AppointmentCTA'
-import DonateSection     from '@/components/home/DonateSection'
+import HeroSection             from '@/components/home/HeroSection'
+import StatsStrip              from '@/components/home/StatsStrip'
+import GovernmentSchemesSection from '@/components/home/GovernmentSchemesSection'
+import VideoSection            from '@/components/home/VideoSection'
+import DiseasesSection         from '@/components/home/DiseasesSection'
+import MythsSection            from '@/components/home/MythsSection'
+import CardiologyTypesSection  from '@/components/home/CardiologyTypesSection'
+import CampaignHighlight       from '@/components/home/CampaignHighlight'
+import NGOSection              from '@/components/home/NGOSection'
+import BlogsPreview            from '@/components/home/BlogsPreview'
+import ReviewsCarousel         from '@/components/home/ReviewsCarousel'
+import GallerySection          from '@/components/home/GallerySection'
+import AppointmentCTA          from '@/components/home/AppointmentCTA'
+import DonateSection           from '@/components/home/DonateSection'
 
 export const revalidate = 60
 
@@ -72,37 +75,46 @@ export default async function HomePage() {
 
       <main>
         {/* 1. Hero — always visible */}
-        <HeroSection settings={settings} diseases={diseases} />
+        <HeroSection settings={settings} />
 
         {/* 2. Stats strip */}
-        {s.stats       && <StatsStrip />}
+        {s.stats           && <StatsStrip />}
+
+        {/* 2b. Government schemes — Ayushman / CSI / RBSK / CGHS */}
+        {s.govSchemes      && <GovernmentSchemesSection />}
 
         {/* 3. Patient Education video */}
-        {s.video       && <VideoSection settings={settings} />}
+        {s.video           && <VideoSection settings={settings} />}
 
         {/* 4. Diseases section */}
-        {s.diseases    && <DiseasesSection diseases={diseases} />}
+        {s.diseases        && <DiseasesSection diseases={diseases} />}
+
+        {/* 4b. CHD myths section */}
+        {s.myths           && <MythsSection />}
+
+        {/* 4c. Types of Cardiology — six specialty cards */}
+        {s.cardiologyTypes && <CardiologyTypesSection />}
 
         {/* 5. Active patient assistance campaigns */}
-        {s.campaigns   && <CampaignHighlight campaigns={campaigns} />}
+        {s.campaigns       && <CampaignHighlight campaigns={campaigns} />}
 
         {/* 6. NGO partners */}
-        {s.ngo         && <NGOSection ngos={ngos} />}
+        {s.ngo             && <NGOSection ngos={ngos} />}
 
         {/* 7. Latest blogs */}
-        {s.blogs       && <BlogsPreview blogs={blogs} />}
+        {s.blogs           && <BlogsPreview blogs={blogs} />}
 
         {/* 8. Gallery section */}
-        {s.gallery     && <GallerySection items={gallery} />}
+        {s.gallery         && <GallerySection items={gallery} />}
 
         {/* 9. Patient reviews carousel */}
-        {s.reviews     && <ReviewsCarousel reviews={reviews} />}
+        {s.reviews         && <ReviewsCarousel reviews={reviews} />}
 
         {/* 10. Donate section */}
-        {s.donate      && <DonateSection settings={settings} />}
+        {s.donate          && <DonateSection settings={settings} />}
 
         {/* 11. Book appointment CTA */}
-        {s.appointment && <AppointmentCTA settings={settings} />}
+        {s.appointment     && <AppointmentCTA settings={settings} />}
       </main>
     </>
   )
