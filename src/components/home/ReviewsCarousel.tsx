@@ -9,43 +9,16 @@ import type { Review } from '@/types/firestore'
 
 interface Props { reviews: Review[] }
 
-// Shown only when Firestore has zero published reviews (dev / fresh deploy)
-const PLACEHOLDER_REVIEWS: Omit<Review, 'id' | 'status' | 'createdAt'>[] = [
-  {
-    patientName: 'Ramesh Kumar',
-    rating: 5,
-    text: 'Exceptional care throughout my treatment. The team was professional, compassionate, and always available to answer my questions. I highly recommend this practice to anyone seeking cardiac care.',
-    source: 'manual',
-  },
-  {
-    patientName: 'Priya Sharma',
-    rating: 5,
-    text: 'I was diagnosed with a complex heart condition and was very worried. The doctor explained everything clearly and the treatment plan was excellent. I am now fully recovered and very grateful.',
-    source: 'google',
-  },
-  {
-    patientName: 'Anand Nair',
-    rating: 5,
-    text: 'The online appointment booking was seamless. The doctor gave me adequate time during the consultation and the follow-up care was outstanding.',
-    source: 'manual',
-  },
-  {
-    patientName: 'Sunita Patel',
-    rating: 5,
-    text: 'Came in for a second opinion and I am so glad I did. Very thorough examination, clear explanations, and a proper treatment roadmap. Felt very confident about my care.',
-    source: 'google',
-  },
-  {
-    patientName: 'Vikram Reddy',
-    rating: 5,
-    text: 'The patient assistance programme helped my family immensely when we were struggling financially. The doctor and team went above and beyond to ensure I received the care I needed.',
-    source: 'manual',
-  },
-]
+// NOTE: no placeholder/fabricated reviews. If Firestore has zero published
+// reviews the section hides itself rather than show fake patient stories.
 
 export default function ReviewsCarousel({ reviews }: Props) {
   const sectionRef = useRef<HTMLElement>(null)
   const [sectionVisible, setSectionVisible] = useState(false)
+  const [current, setCurrent] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [perPage, setPerPage] = useState(3)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const el = sectionRef.current
@@ -58,20 +31,6 @@ export default function ReviewsCarousel({ reviews }: Props) {
     return () => obs.disconnect()
   }, [])
 
-  const isLive = reviews.length > 0
-  const displayReviews: Review[] = isLive
-    ? reviews.slice(0, 9) // show max 9 on home
-    : PLACEHOLDER_REVIEWS.map((r, i) => ({
-        ...r,
-        id: `placeholder-${i}`,
-        status: 'published' as const,
-      }))
-
-  const [current, setCurrent] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const [perPage, setPerPage] = useState(3)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
   // Detect responsive columns
   useEffect(() => {
     const update = () =>
@@ -81,6 +40,8 @@ export default function ReviewsCarousel({ reviews }: Props) {
     return () => window.removeEventListener('resize', update)
   }, [])
 
+  // Derived values (safe to compute with an empty list)
+  const displayReviews = reviews.slice(0, 9) // show max 9 on home
   const maxIndex = Math.max(0, displayReviews.length - perPage)
   const prev = () => setCurrent((c) => Math.max(0, c - 1))
   const next = () => setCurrent((c) => (c >= maxIndex ? 0 : c + 1))
@@ -91,6 +52,10 @@ export default function ReviewsCarousel({ reviews }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused, current, maxIndex])
+
+  // Hide the section entirely when there are no published reviews — never
+  // substitute fabricated testimonials.
+  if (reviews.length === 0) return null
 
   const avgRating =
     displayReviews.reduce((s, r) => s + r.rating, 0) / displayReviews.length
@@ -130,7 +95,7 @@ export default function ReviewsCarousel({ reviews }: Props) {
               <p className="text-3xl font-extrabold text-[#143B7D]">{avgRating.toFixed(1)}</p>
               <StarRating rating={Math.round(avgRating)} size="xs" />
               <p className="text-[10px] text-[#6B7280] mt-1 font-medium">
-                {isLive ? reviews.length : displayReviews.length}+ reviews
+                {reviews.length}+ reviews
               </p>
             </div>
             <Link

@@ -257,9 +257,10 @@ function DonateBox({ campaign }: { campaign: Campaign }) {
         },
         theme: { color: '#1565D8' },
         handler: async (resp: any) => {
-          // Verify + save donation server-side
+          // Verify + save donation server-side. Only show the success screen
+          // AFTER the server confirms the payment was recorded.
           try {
-            await fetch('/api/razorpay/verify', {
+            const res = await fetch('/api/razorpay/verify', {
               method:  'POST',
               headers: { 'Content-Type': 'application/json' },
               body:    JSON.stringify({
@@ -274,8 +275,15 @@ function DonateBox({ campaign }: { campaign: Campaign }) {
                 anonymous,
               }),
             })
+            const data = await res.json()
+            if (!res.ok || !data.success) {
+              setError(data.error ?? 'Payment received but could not be verified. Our team will contact you shortly.')
+              return
+            }
           } catch (e) {
             console.error('Verify error:', e)
+            setError('Payment received but could not be verified. Our team will contact you shortly.')
+            return
           }
           setSuccessInfo({
             donorName:    anonymous ? 'Anonymous Donor' : name.trim() || 'Donor',

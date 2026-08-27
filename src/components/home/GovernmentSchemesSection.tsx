@@ -4,17 +4,21 @@
  * Design concept: a national-tricolor themed premium section that exposes the
  * four major Indian government / professional-body schemes a patient can use
  * to make cardiac care affordable. Each card uses a scheme-specific accent
- * palette and a small hero illustration that visually communicates WHO the
- * scheme is for — so visitors self-identify within seconds.
+ * palette and an animated GIF hero that visually communicates WHO the scheme
+ * is for — so visitors self-identify within seconds.
  *
  *  1. Ayushman Bharat (PM-JAY) — ₹5 lakh cover, cashless, empanelled hospitals
- *     hero: shield stamp + animated rupee highlight
+ *     hero: Ayushman_Bharat_PM.gif (16:9 animated)
  *  2. CSI (Cardiological Society of India) — professional body, ethical care
- *     hero: rotating award medallion with "MEMBER" ribbon
+ *     hero: Cardiological_Society_of_India.gif (16:9 animated)
  *  3. RBSK (Rashtriya Bal Swasthya Karyakram) — child heart initiative, 0-18
- *     hero: holding hands with a small heart, growth ticker
+ *     hero: Rashtriya_Bal_Swasthya_Karyakr.gif (16:9 animated)
  *  4. CGHS (Central Government Health Scheme) — central-govt employees/pensioners
- *     hero: government card/ID outline with golden tick
+ *     hero: For_central_govt_employees_p.gif (16:9 animated)
+ *
+ * GIFs live in /public/animation/ and are loaded lazily so the page doesn't
+ * pay the ~56 MB combined cost up front. Each GIF fades in once its card is
+ * active (in viewport).
  *
  * Why this section exists:
  *   - Cardiac care is expensive; ~70% of out-of-pocket spend in India is borne
@@ -30,7 +34,7 @@
  *  1. Tricolor top band scales-in left → right
  *  2. Eyebrow pulse, title scales-in, ECG underline draws
  *  3. Cards stagger up + in
- *  4. Each card's hero illustration activates when in view (continuous loop)
+ *  4. Each card's hero GIF fades in once the card is active
  *  5. Hover: card lifts, accent ring blooms, ECG line draws on underline
  *  6. Bottom "Eligibility check" CTA strip with shimmer
  */
@@ -59,6 +63,8 @@ interface SchemeDef {
   highlights: string[]       // 3 short bullets
   coverage?:  string         // highlight stat — e.g. "₹5 Lakh" or "0–18 yrs"
   eligible:   string         // eligibility one-liner
+  gif:        string         // path to scheme illustration GIF (under /public)
+  gifAlt:     string         // alt text for the GIF
   accent:     {
     text:   string   // text color class
     ring:   string   // border hover class
@@ -69,7 +75,6 @@ interface SchemeDef {
     pill:   string   // pill bg
     pillFg: string   // pill fg
   }
-  heroKey:    'ayushman' | 'csi' | 'rbsk' | 'cghs'
 }
 
 const SCHEMES: SchemeDef[] = [
@@ -87,8 +92,9 @@ const SCHEMES: SchemeDef[] = [
       'Pre-existing conditions covered',
       'Pan-India portability',
     ],
+    gif:        '/animation/Ayushman_Bharat_PM.gif',
+    gifAlt:     'Ayushman Bharat PM-JAY scheme illustration',
     accent: { text: 'text-green',  ring: 'group-hover:border-green/40',   glow: 'rgba(24,181,90,0.20)',  bgFrom: 'from-green/15',   bgVia: 'via-orange-500/8', bright: '#18B55A', pill: 'bg-green/8',   pillFg: 'text-green' },
-    heroKey: 'ayushman',
   },
   {
     id:         'csi',
@@ -103,8 +109,9 @@ const SCHEMES: SchemeDef[] = [
       'CME-accredited practice',
       'Evidence-based treatment plans',
     ],
+    gif:        '/animation/Cardiological_Society_of_India.gif',
+    gifAlt:     'Cardiological Society of India membership illustration',
     accent: { text: 'text-primary', ring: 'group-hover:border-primary/40', glow: 'rgba(21,101,216,0.18)', bgFrom: 'from-primary/15', bgVia: 'via-primary/5',  bright: '#1565D8', pill: 'bg-primary/8', pillFg: 'text-primary' },
-    heroKey: 'csi',
   },
   {
     id:         'rbsk',
@@ -120,8 +127,9 @@ const SCHEMES: SchemeDef[] = [
       'Free cardiac surgery referral',
       'School health-camp tie-up',
     ],
+    gif:        '/animation/Rashtriya_Bal_Swasthya_Karyakr.gif',
+    gifAlt:     'Rashtriya Bal Swasthya Karyakram child heart scheme illustration',
     accent: { text: 'text-pink-600', ring: 'group-hover:border-pink-400/50', glow: 'rgba(236,72,153,0.18)', bgFrom: 'from-pink-500/15', bgVia: 'via-rose-500/5', bright: '#EC4899', pill: 'bg-pink-50',  pillFg: 'text-pink-700' },
-    heroKey: 'rbsk',
   },
   {
     id:         'cghs',
@@ -136,8 +144,9 @@ const SCHEMES: SchemeDef[] = [
       'Reimbursement for procedures',
       'Investigations empanelled',
     ],
+    gif:        '/animation/For_central_govt_employees_p.gif',
+    gifAlt:     'Central Government Health Scheme illustration for employees and pensioners',
     accent: { text: 'text-navy',     ring: 'group-hover:border-navy/40',     glow: 'rgba(20,59,125,0.20)', bgFrom: 'from-navy/15',    bgVia: 'via-amber-500/8', bright: '#143B7D', pill: 'bg-navy/8',     pillFg: 'text-navy' },
-    heroKey: 'cghs',
   },
 ]
 
@@ -204,183 +213,6 @@ function ECGHeader({ active, color = '#1565D8' }: { active: boolean; color?: str
   )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   Hero illustrations — four SVG scenes
-   ════════════════════════════════════════════════════════════════ */
-
-/* 1. Ayushman Bharat — a shield with a rupee amount */
-function AyushmanHero({ active, color }: { active: boolean; color: string }) {
-  return (
-    <svg viewBox="0 0 96 96" className="w-full h-full">
-      <defs>
-        <linearGradient id="ab-shield" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.30" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.05" />
-      </linearGradient>
-    </defs>
-      {/* shield outline */}
-      <path d="M48,8 L78,18 L78,48 C78,68 64,82 48,88 C32,82 18,68 18,48 L18,18 Z"
-            fill="url(#ab-shield)" stroke={color} strokeWidth="2"
-            strokeLinejoin="round"
-            style={{
-              transformBox: 'fill-box' as any,
-              transformOrigin: '50% 50%',
-              animation: active ? 'abScale 1.4s cubic-bezier(0.22,1,0.36,1) both, abPulse 2.4s ease-in-out 1.4s infinite' : 'none',
-              opacity: 0.5,
-            }} />
-      {/* big ₹ symbol */}
-      <text x="48" y="56" textAnchor="middle"
-            fontFamily="ui-sans-serif, system-ui" fontSize="34" fontWeight="900"
-            fill={color} style={{ filter: `drop-shadow(0 1px 0 ${color}80)` }}>
-        ₹
-    </text>
-      {/* rupee amount pulsing below */}
-      {active && (
-        <text x="48" y="74" textAnchor="middle"
-              fontFamily="ui-sans-serif, system-ui" fontSize="10" fontWeight="700"
-              fill={color} opacity="0.85">
-          5 Lakh
-          <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite" />
-      </text>
-      )}
-      <style>{`
-        @keyframes abScale  { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes abPulse  {
-          0%,100% { filter: drop-shadow(0 0 0 ${color}00); }
-          50%     { filter: drop-shadow(0 0 10px ${color}); }
-        }
-      `}</style>
-  </svg>
-  )
-}
-
-/* 2. CSI — rotating medallion + member ribbon */
-function CSIHero({ active, color }: { active: boolean; color: string }) {
-  return (
-    <svg viewBox="0 0 96 96" className="w-full h-full">
-      {/* outer rotating ring (dashed) */}
-      <g style={{
-            transformBox: 'fill-box' as any,
-            transformOrigin: '50% 50%',
-            animation: active ? 'csiSpin 18s linear infinite' : 'none',
-          }}>
-        <circle cx="48" cy="48" r="34" fill="none" stroke={color} strokeWidth="1.2"
-                strokeDasharray="4 5" opacity="0.55" />
-    </g>
-      {/* medallion */}
-      <g style={{
-            transformBox: 'fill-box' as any,
-            transformOrigin: '50% 50%',
-            animation: active ? 'csiPop 1.4s cubic-bezier(0.22,1,0.36,1) both, csiBob 3.2s ease-in-out 1.4s infinite' : 'none',
-            opacity: 0.5,
-          }}>
-        <circle cx="48" cy="48" r="22" fill={color} />
-        {/* inner star/heart for cardiology accent */}
-        <path d="M48,58 C42,52 36,48 36,42 C36,38 39,36 42,36 C44,36 46,37 48,38 C50,37 52,36 54,36 C57,36 60,38 60,42 C60,48 54,52 48,58 Z"
-              fill="white" opacity="0.95" />
-        {/* bottom tail */}
-        <path d="M40,68 L48,82 L56,68 Z" fill={color} />
-    </g>
-      <style>{`
-        @keyframes csiSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes csiPop  { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes csiBob  {
-          0%,100% { transform: translateY(0); }
-          50%     { transform: translateY(-2px); }
-        }
-      `}</style>
-  </svg>
-  )
-}
-
-/* 3. RBSK — a child heart with growth pulse + sparkles */
-function RBSKHero({ active, color }: { active: boolean; color: string }) {
-  return (
-    <svg viewBox="0 0 96 96" className="w-full h-full">
-      {/* protective arc above */}
-      <path d="M14,32 Q48,8 82,32"
-            fill="none" stroke={color} strokeWidth="2" opacity="0.35"
-            strokeDasharray="4 6" />
-      {/* heart */}
-      <g style={{
-            transformBox: 'fill-box' as any,
-            transformOrigin: '50% 55%',
-            animation: active ? 'rbskBeat 2.2s ease-in-out infinite' : 'none',
-          }}>
-        <path d="M48,70 C40,60 28,52 28,42 C28,34 34,28 42,28 C46,28 48,30 48,30 C48,30 50,28 54,28 C62,28 68,34 68,42 C68,52 56,60 48,70 Z"
-              fill={color} />
-    </g>
-      {/* mini growth bars (ascending) */}
-      {active && [12, 36, 60, 84].map((y, i) => (
-        <line key={i} x1={20 + i * 4} y1={y + 4} x2={20 + i * 4} y2={y - (i + 1) * 4}
-              stroke={color} strokeWidth="2" opacity="0.7" strokeLinecap="round" />
-      ))}
-      {/* 4 sparkles around */}
-      {[
-        { x: 22, y: 24, d: '0s'   },
-        { x: 74, y: 24, d: '0.5s' },
-        { x: 18, y: 64, d: '1.0s' },
-        { x: 78, y: 64, d: '1.5s' },
-      ].map((s, i) => (
-        <g key={i} style={{
-              transformBox: 'fill-box' as any,
-              transformOrigin: '50% 50%',
-              animation: active ? `rbskPop 1.8s ease-in-out ${s.d} infinite` : 'none',
-            }}>
-          <circle cx={s.x} cy={s.y} r="2" fill={color} />
-      </g>
-      ))}
-      <style>{`
-        @keyframes rbskBeat { 0%,100% { transform: scale(1); } 14% { transform: scale(1.16); } 28% { transform: scale(1); } 42% { transform: scale(1.10); } 56% { transform: scale(1); } }
-        @keyframes rbskPop  { 0%,100% { transform: scale(0.4); opacity: 0; } 50% { transform: scale(1.4); opacity: 1; } }
-      `}</style>
-  </svg>
-  )
-}
-
-/* 4. CGHS — government ID card outline with sweeping check */
-function CGHSHero({ active, color }: { active: boolean; color: string }) {
-  return (
-    <svg viewBox="0 0 96 96" className="w-full h-full">
-      {/* ID card */}
-      <rect x="14" y="20" width="68" height="50" rx="6"
-            fill="none" stroke={color} strokeWidth="2"
-            style={{
-              transformBox: 'fill-box' as any,
-              transformOrigin: '50% 50%',
-              animation: active ? 'cghsCard 1.4s cubic-bezier(0.22,1,0.36,1) both' : 'none',
-              opacity: 0.5,
-            }} />
-      {/* avatar circle on card */}
-      <circle cx="30" cy="40" r="6" fill="none" stroke={color} strokeWidth="1.6" opacity="0.7" />
-      {/* ID lines (text representation) */}
-      <line x1="42" y1="36" x2="74" y2="36" stroke={color} strokeWidth="1.6" opacity="0.6" />
-      <line x1="42" y1="44" x2="68" y2="44" stroke={color} strokeWidth="1.6" opacity="0.4" />
-      <line x1="20" y1="56" x2="50" y2="56" stroke={color} strokeWidth="1.6" opacity="0.4" />
-      <line x1="20" y1="62" x2="46" y2="62" stroke={color} strokeWidth="1.6" opacity="0.4" />
-      {/* golden approved check (animated draw) */}
-      <circle cx="72" cy="36" r="9" fill="#F59E0B" opacity={active ? 1 : 0}
-              style={{ transition: 'opacity 0.6s ease 1.0s', filter: 'drop-shadow(0 0 4px #F59E0B)' }} />
-      <polyline points="67,36 71,40 78,32"
-                fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
-                strokeDasharray="20" strokeDashoffset={active ? 0 : 20}
-                style={{ transition: active ? 'stroke-dashoffset 0.6s ease 1.4s' : 'none' }} />
-      <style>{`
-        @keyframes cghsCard { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-      `}</style>
-  </svg>
-  )
-}
-
-function Hero({ keyName, active, color }: { keyName: SchemeDef['heroKey']; active: boolean; color: string }) {
-  switch (keyName) {
-    case 'ayushman': return <AyushmanHero active={active} color={color} />
-    case 'csi':      return <CSIHero      active={active} color={color} />
-    case 'rbsk':     return <RBSKHero     active={active} color={color} />
-    case 'cghs':     return <CGHSHero     active={active} color={color} />
-  }
-}
-
 /* ── Card ──────────────────────────────────────────────── */
 function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active: boolean }) {
   const Icon = s.icon
@@ -409,20 +241,34 @@ function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active:
           .gs-card-${s.id}:hover { box-shadow: 0 18px 50px ${glow}; }
         `}</style>
 
-        {/* Top hero illustration */}
+        {/* Top hero illustration — animated GIF (16:9) */}
         <div
-          className={`relative h-32 sm:h-36 flex items-center justify-center overflow-hidden bg-gradient-to-br ${s.accent.bgFrom} via-white ${s.accent.bgVia}`}
+          className={`relative aspect-[16/9] overflow-hidden bg-gradient-to-br ${s.accent.bgFrom} via-white ${s.accent.bgVia}`}
         >
           {/* corner brackets */}
-          <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-slate-300" />
-          <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-slate-300" />
-          <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-slate-300" />
-          <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-slate-300" />
+          <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-slate-300 z-10" />
+          <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-slate-300 z-10" />
+          <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-slate-300 z-10" />
+          <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-slate-300 z-10" />
 
-          {/* hero SVG */}
-          <div className="w-24 h-24 sm:w-28 sm:h-28 relative z-10">
-            <Hero keyName={s.heroKey} active={active} color={s.accent.bright} />
-        </div>
+          {/* scheme GIF — fills the 16:9 area, fades in once card is active */}
+          {/*
+            Plain <img> (not next/image): GIFs are already a compressed animated
+            format and next/image can't optimise them — it'd just pass through.
+            `loading="lazy"` defers the 6–34 MB GIF fetch until the card scrolls
+            near the viewport; `decoding="async"` keeps the main thread free.
+          */}
+          <img
+            src={s.gif}
+            alt={s.gifAlt}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            style={{
+              opacity: active ? 1 : 0,
+              transitionDelay: `${delay}ms`,
+            }}
+          />
 
           {/* coverage badge top-right (e.g. "₹5 Lakh") */}
           {s.coverage && (

@@ -1,40 +1,40 @@
 /**
  * POST /api/revalidate
  *
- * Called by the admin dashboard immediately after saving site settings.
- * Busts the Next.js unstable_cache entry tagged 'settings' so every page
- * that calls getSiteSettings() re-fetches from Firestore on the next request.
+ * Called by the admin dashboard immediately after saving site settings /
+ * content. Busts the Next.js unstable_cache entries tagged 'settings' and
+ * 'content' so every page re-fetches from Firestore on the next request.
  *
- * Security: requires a shared secret in the Authorization header.
- *   Header: Authorization: Bearer <REVALIDATE_SECRET>
- *   Set REVALIDATE_SECRET in .env.local and on the VPS.
+ * Security: requires the Firebase ID token of an admin/doctor user —
+ * no shared secret is shipped in the admin bundle anymore.
+ *   Header: Authorization: Bearer <Firebase ID token>
  *
- * Usage from admin dashboard (after successful Firestore save):
+ * Usage from admin dashboard:
+ *   const token = await getIdToken()
  *   await fetch('https://upbeatheart.com/api/revalidate', {
  *     method: 'POST',
- *     headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_REVALIDATE_SECRET}` },
+ *     headers: { Authorization: `Bearer ${token}` },
  *   })
  */
 
 import { revalidateTag } from 'next/cache'
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyAdminToken } from '@/lib/admin-auth'
 
 export async function POST(req: NextRequest) {
   // ── Auth check ────────────────────────────────────────────────────────────
-  const secret = process.env.REVALIDATE_SECRET
-  const auth   = req.headers.get('authorization') ?? ''
-  const token  = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-
-  if (!secret || token !== secret) {
+  const user = await verifyAdminToken(req.headers.get('authorization'))
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // ── Bust the settings cache tag ───────────────────────────────────────────
+  // ── Bust the settings + content cache tags ────────────────────────────────
   revalidateTag('settings')
+  revalidateTag('content')
 
   return NextResponse.json({
     revalidated: true,
-    tag: 'settings',
+    tag: 'settings, content',
     timestamp: new Date().toISOString(),
   })
 }

@@ -186,7 +186,7 @@ export default async function DiseasesPage() {
               Book Consultation
             </Link>
             <Link
-              href="/treatments"
+              href="/diseases"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/15 text-white
                 font-semibold text-sm hover:bg-white/25 transition-all"
             >

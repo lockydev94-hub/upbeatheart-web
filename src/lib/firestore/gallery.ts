@@ -11,24 +11,14 @@ async function queryGallery(limit?: number): Promise<GalleryItem[]> {
   try {
     let q = db.collection('gallery').where('status', '==', 'published').orderBy('createdAt', 'desc')
     const snap = limit ? await q.limit(limit).get() : await q.get()
-    console.log(`[gallery] fetched ${snap.size} published items (ordered)`)
     return snap.docs.map(toItem)
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes('index') || msg.includes('FAILED_PRECONDITION')) {
-      console.warn('[gallery] ⚠️  Missing composite index (status + createdAt). Falling back to unordered query…')
-      const match = msg.match(/https:\/\/console\.firebase\.google\.com[^\s]+/)
-      if (match) console.warn('  Create index →', match[0])
-    } else {
-      console.error('[gallery] Firestore error:', msg)
-    }
+  } catch {
+    // Fallback: no orderBy — works without a composite index
     try {
       const snap = await db.collection('gallery').where('status', '==', 'published').get()
       const docs = snap.docs.map(toItem)
-      console.log(`[gallery] fallback fetched ${docs.length} items (unordered)`)
       return limit ? docs.slice(0, limit) : docs
-    } catch (err2) {
-      console.error('[gallery] fallback failed:', err2)
+    } catch {
       return []
     }
   }

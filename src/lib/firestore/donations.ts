@@ -23,12 +23,30 @@ export interface PublicDonor {
 export async function getPublicDonors(limit = 15): Promise<PublicDonor[]> {
   try {
     const db   = getAdminDb()
-    const snap = await db
-      .collection('donations')
-      .where('showOnWebsite', '==', true)
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .get()
+    let snap
+    try {
+      // Preferred: with orderBy (requires composite index on showOnWebsite + createdAt)
+      snap = await db
+        .collection('donations')
+        .where('showOnWebsite', '==', true)
+        .orderBy('createdAt', 'desc')
+        .limit(limit)
+        .get()
+    } catch {
+      // Fallback: no orderBy — works without a composite index
+      const unordered = await db
+        .collection('donations')
+        .where('showOnWebsite', '==', true)
+        .get()
+      const docs = unordered.docs
+        .sort((a, b) => {
+          const ta = a.data().createdAt?.seconds ?? 0
+          const tb = b.data().createdAt?.seconds ?? 0
+          return tb - ta
+        })
+        .slice(0, limit)
+      snap = { docs } as FirebaseFirestore.QuerySnapshot
+    }
 
     const MONTH_NAMES = [
       'January','February','March','April','May','June',
@@ -72,11 +90,21 @@ export interface MonthlyDonors {
 export async function getPublicDonorsByMonth(limitMonths = 12): Promise<MonthlyDonors[]> {
   try {
     const db   = getAdminDb()
-    const snap = await db
-      .collection('donations')
-      .where('showOnWebsite', '==', true)
-      .orderBy('createdAt', 'desc')
-      .get()
+    let snap
+    try {
+      // Preferred: with orderBy (requires composite index on showOnWebsite + createdAt)
+      snap = await db
+        .collection('donations')
+        .where('showOnWebsite', '==', true)
+        .orderBy('createdAt', 'desc')
+        .get()
+    } catch {
+      // Fallback: no orderBy — works without a composite index
+      snap = await db
+        .collection('donations')
+        .where('showOnWebsite', '==', true)
+        .get()
+    }
 
     const MONTH_NAMES = [
       'January','February','March','April','May','June',

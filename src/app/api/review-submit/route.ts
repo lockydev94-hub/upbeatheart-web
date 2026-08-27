@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
       createdAt:   FieldValue.serverTimestamp(),
     })
 
-    console.log(`[review-submit] New review: ${ref.id} by ${patientName}`)
     return NextResponse.json({ id: ref.id }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/review-submit]', err)

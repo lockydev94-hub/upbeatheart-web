@@ -207,6 +207,8 @@ interface ChatWidgetProps {
   address:   string
   clinicHours: Array<{ day: string; open: string; close: string; closed: boolean }>
   appointmentsOpen: boolean
+  doctorName?:   string
+  hospitalName?: string
 }
 
 /* ─── Helpers ────────────────────────────────────────── */
@@ -222,7 +224,7 @@ const MAIN_MENU: Option[] = [
 ]
 
 /* ─── Component ──────────────────────────────────────── */
-export default function ChatWidget({ phone, whatsapp, email, address, clinicHours, appointmentsOpen }: ChatWidgetProps) {
+export default function ChatWidget({ phone, whatsapp, email, address, clinicHours, appointmentsOpen, doctorName, hospitalName }: ChatWidgetProps) {
   const [open, setOpen]       = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput]     = useState('')
@@ -381,7 +383,7 @@ export default function ChatWidget({ phone, whatsapp, email, address, clinicHour
       case 'about':
         pushBot({
           type: 'text',
-          text: '👨‍⚕️ **About Our Cardiologist**\n\nOur consultant cardiologist is a highly experienced cardiac specialist associated with CARE Hospitals.\n\nSpecialisations include interventional cardiology, heart failure management, echocardiography, and preventive cardiology.',
+          text: `👨‍⚕️ **About Our Cardiologist**\n\nOur consultant cardiologist is a highly experienced cardiac specialist${hospitalName ? ` associated with ${hospitalName}` : ''}${doctorName ? `: **${doctorName}**` : ''}.\n\nSpecialisations include interventional cardiology, heart failure management, echocardiography, and preventive cardiology.`,
         })
         await delay(300)
         pushBot({

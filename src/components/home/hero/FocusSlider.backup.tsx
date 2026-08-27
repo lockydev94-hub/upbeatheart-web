@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 
-import PulsingHeart from './PulsingHeart'
 import usePrefersReducedMotion from './usePrefersReducedMotion'
 import { FOCUS_SLIDES, SPECIALITY, SLIDE_DURATION } from './heroData'
 
@@ -13,20 +13,14 @@ const ECG_PATH =
   'M0 22 H96 l10 0 l7 -14 l8 27 l7 -20 l6 7 H236 l10 0 l7 -14 l8 27 l7 -20 l6 7 H400'
 
 /**
- * FocusSlider — the hero's right column.
+ * FocusSlider — the hero's right column, light-glass edition.
  *
- * A slider that walks the visitor through exactly what this doctor treats:
- * the core focus (congenital & structural heart problems) followed by each
- * age group served, so the scope of care is understood in seconds without
- * reading a paragraph.
+ * Sits on the white-to-blue hero field. Every surface here uses the same
+ * frosted-glass idiom as DoctorPanel: bg-white/75 + backdrop-blur + a
+ * white/70 border and a static gradient edge.
  *
- * The heart above the track is persistent rather than per-slide: it re-tints
- * and grows as the slider advances, which reads as one continuous patient
- * journey instead of five unrelated cards.
- *
- * Autoplay pauses on hover and focus. Arrow keys, arrow buttons, dots and
- * touch swipe all drive it manually. Under `prefers-reduced-motion` autoplay
- * stops and the slide changes without transitions.
+ * Logic is unchanged — only class names and colour values are adapted for
+ * the light field.
  */
 export default function FocusSlider() {
   const reduced = usePrefersReducedMotion()
@@ -51,7 +45,7 @@ export default function FocusSlider() {
   /* ── Touch swipe ── */
   const touchX = useRef<number | null>(null)
   const onTouchStart = (e: React.TouchEvent) => { touchX.current = e.touches[0].clientX }
-  const onTouchEnd = (e: React.TouchEvent) => {
+  const onTouchEnd   = (e: React.TouchEvent) => {
     if (touchX.current === null) return
     const dx = e.changedTouches[0].clientX - touchX.current
     if (Math.abs(dx) > 45) (dx < 0 ? next : prev)()
@@ -72,7 +66,7 @@ export default function FocusSlider() {
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      {/* Spinning conic-gradient border ring */}
+      {/* Static gradient edge — matches DoctorPanel */}
       <div className="hero-ring absolute -inset-[2px] rounded-[28px] pointer-events-none z-0" aria-hidden />
 
       <section
@@ -82,16 +76,18 @@ export default function FocusSlider() {
         onKeyDown={onKeyDown}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className="relative z-10 rounded-[26px] border border-border/40 bg-white shadow-[0_10px_50px_rgba(21,101,216,0.14)] overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="relative z-10 rounded-[26px] border border-white/70 bg-white/75 backdrop-blur-xl shadow-[0_24px_70px_rgba(20,59,125,0.14),0_4px_18px_rgba(20,59,125,0.06)] overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#EAF3FF]"
       >
         {/* Top accent strip */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] gradient-primary z-20" aria-hidden />
+        <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-[linear-gradient(90deg,#1565D8,#18B8E6,#18B55A)] z-20" aria-hidden />
+        {/* Inner top-light so the glass reads as a surface */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/80 to-transparent pointer-events-none" aria-hidden />
 
-        {/* Faint grid so the heart floats on a clinical field */}
+        {/* Faint clinical grid behind the heart */}
         <svg className="absolute inset-0 w-full h-full opacity-[0.035] pointer-events-none" aria-hidden>
           <defs>
             <pattern id="focusGrid" width="26" height="26" patternUnits="userSpaceOnUse">
-              <path d="M26 0L0 0 0 26" fill="none" stroke="#1565D8" strokeWidth="0.6" />
+              <path d="M26 0L0 0 0 26" fill="none" stroke="rgba(21,101,216,0.5)" strokeWidth="0.6" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#focusGrid)" />
@@ -102,14 +98,14 @@ export default function FocusSlider() {
           {/* ══ Header ══ */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary/50">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary/70">
                 <Sparkles size={11} />
                 {SPECIALITY.eyebrow}
               </span>
-              <h2 className="mt-1 text-[21px] sm:text-[25px] font-extrabold tracking-tight leading-tight shimmer-text">
+              <h2 className="mt-1 text-[21px] sm:text-[25px] font-extrabold tracking-tight leading-tight hero-title-grad">
                 {SPECIALITY.title}
               </h2>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary/45 mt-0.5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary mt-0.5">
                 {SPECIALITY.lead}
               </p>
             </div>
@@ -120,38 +116,83 @@ export default function FocusSlider() {
                 type="button"
                 onClick={prev}
                 aria-label="Previous focus area"
-                className="group/btn relative w-9 h-9 rounded-xl border border-border/80 bg-white flex items-center justify-center overflow-hidden shadow-sm transition-all duration-150 hover:border-primary hover:text-primary hover:shadow-[0_0_0_3px_rgba(21,101,216,0.10)] active:scale-95"
+                className="group/btn relative w-9 h-9 rounded-xl border border-white/80 bg-white/70 text-navy/80 flex items-center justify-center overflow-hidden transition-all duration-150 hover:border-primary/50 hover:text-primary hover:bg-white active:scale-95"
               >
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 gradient-primary opacity-0 group-hover/btn:opacity-100 transition-opacity" aria-hidden />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#1565D8,#18B8E6,#18B55A)] opacity-0 group-hover/btn:opacity-100 transition-opacity" aria-hidden />
                 <ChevronLeft size={16} />
               </button>
               <button
                 type="button"
                 onClick={next}
                 aria-label="Next focus area"
-                className="group/btn relative w-9 h-9 rounded-xl border border-border/80 bg-white flex items-center justify-center overflow-hidden shadow-sm transition-all duration-150 hover:border-primary hover:text-primary hover:shadow-[0_0_0_3px_rgba(21,101,216,0.10)] active:scale-95"
+                className="group/btn relative w-9 h-9 rounded-xl border border-white/80 bg-white/70 text-navy/80 flex items-center justify-center overflow-hidden transition-all duration-150 hover:border-primary/50 hover:text-primary hover:bg-white active:scale-95"
               >
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 gradient-primary opacity-0 group-hover/btn:opacity-100 transition-opacity" aria-hidden />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[linear-gradient(90deg,#1565D8,#18B8E6,#18B55A)] opacity-0 group-hover/btn:opacity-100 transition-opacity" aria-hidden />
                 <ChevronRight size={16} />
               </button>
             </div>
           </div>
 
-          {/* ══ Persistent heart — re-tints and grows with the active slide ══ */}
-          <div className="relative flex justify-center items-center h-[215px] sm:h-[240px] mt-2">
-            <PulsingHeart
-              accent={slide.accent}
-              glow={slide.glow}
-              scale={slide.heartScale}
-              showRepair={slide.showRepair}
-              reduced={reduced}
-            />
+          {/* ══ Disease image — full-bleed across the card ══
+               Negative margins break out of the px-5/px-7 card padding so
+               the image fills edge-to-edge with no side gaps.               */}
+          <div className="relative -mx-5 sm:-mx-7 h-[230px] sm:h-[265px] mt-3 overflow-hidden">
+            {/* Subtle top/bottom fades so the image blends into the card */}
+            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-white/80 to-transparent z-10 pointer-events-none" aria-hidden />
+            <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-white/80 to-transparent z-10 pointer-events-none" aria-hidden />
 
-            {/* Age badge orbiting the heart — hidden on the core-focus slide */}
-            {slide.age && (
+            {FOCUS_SLIDES.map((s, i) => (
+              <div
+                key={s.id}
+                className={`absolute inset-0 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  i === active
+                    ? 'opacity-100 scale-100 translate-y-0'
+                    : i < active
+                    ? 'opacity-0 scale-[1.04] -translate-y-6'
+                    : 'opacity-0 scale-[1.04] translate-y-6'
+                }`}
+              >
+                {/* Coloured radial glow behind the image */}
+                <div
+                  className="absolute inset-0 transition-all duration-700"
+                  style={{
+                    background: `radial-gradient(ellipse 80% 90% at 50% 60%, ${s.glow} 0%, transparent 72%)`,
+                  }}
+                />
+
+                {/* Disease image fills the full area */}
+                {s.diseaseImage && (
+                  <Image
+                    src={s.diseaseImage}
+                    alt={s.headline}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="relative z-10 object-contain px-8 py-3"
+                    style={{
+                      filter: `drop-shadow(0 8px 24px ${s.glow}) drop-shadow(0 0 14px ${s.glow})`,
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+
+            {/* Disease name label — bottom-left overlay */}
+            <div className="absolute bottom-3 left-4 z-20">
               <span
                 key={slide.id}
-                className="hero-chip-in absolute top-3 right-0 sm:right-2 flex items-center gap-1.5 rounded-full bg-white border px-2.5 py-1 text-[10px] font-extrabold shadow-sm"
+                className="hero-chip-in inline-flex items-center gap-1.5 rounded-full bg-white/90 border backdrop-blur-md px-3 py-1 text-[10px] font-extrabold shadow-[0_4px_14px_rgba(20,59,125,0.10)]"
+                style={{ color: slide.accent, borderColor: slide.glow }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: slide.accent }} aria-hidden />
+                {slide.headline}
+              </span>
+            </div>
+
+            {/* Age badge — top-right */}
+            {slide.age && (
+              <span
+                key={`age-${slide.id}`}
+                className="hero-chip-in absolute top-3 right-4 flex items-center gap-1.5 rounded-full bg-white/90 border backdrop-blur-sm px-2.5 py-1 text-[10px] font-extrabold z-20 shadow-[0_4px_14px_rgba(20,59,125,0.10)]"
                 style={{ color: slide.accent, borderColor: slide.glow }}
               >
                 <slide.icon size={11} />
@@ -171,11 +212,13 @@ export default function FocusSlider() {
                   <stop offset="100%" stopColor="#18B55A" stopOpacity="0" />
                 </linearGradient>
               </defs>
+              {/* Resting trace */}
               <path
                 d={ECG_PATH} pathLength={1000}
-                stroke="url(#focusEcgFade)" strokeOpacity="0.22"
+                stroke="url(#focusEcgFade)" strokeOpacity="0.35"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
               />
+              {/* Travelling bright pulse */}
               <path
                 d={ECG_PATH} pathLength={1000}
                 stroke="url(#focusEcgFade)"
@@ -205,18 +248,20 @@ export default function FocusSlider() {
                     aria-hidden={!isActive}
                   >
                     <div
-                      className={`min-h-[176px] rounded-2xl border border-border/70 bg-bg/70 px-4 py-3.5 transition-all duration-500 ${
+                      className={`min-h-[176px] rounded-2xl border border-[#E4ECF6] bg-white/70 px-4 py-3.5 transition-all duration-500 ${
                         isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
                       }`}
                     >
                       {/* Kicker row */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em]"
-                              style={{ color: s.accent }}>
+                        <span
+                          className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em]"
+                          style={{ color: s.accent }}
+                        >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.accent }} aria-hidden />
                           {s.kicker}
                         </span>
-                        <span className="text-[10px] font-extrabold text-text-secondary/35 tabular-nums">
+                        <span className="text-[10px] font-extrabold text-text-secondary tabular-nums">
                           {String(i + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
                         </span>
                       </div>
@@ -225,7 +270,7 @@ export default function FocusSlider() {
                       <div className="flex items-start gap-2.5 mt-2">
                         <span
                           className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border"
-                          style={{ background: `${s.accent}14`, borderColor: s.glow, color: s.accent }}
+                          style={{ background: `${s.accent}1A`, borderColor: s.glow, color: s.accent }}
                           aria-hidden
                         >
                           <Icon size={16} />
@@ -244,7 +289,7 @@ export default function FocusSlider() {
                         {s.chips.map((c, ci) => (
                           <span
                             key={c}
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-white transition-all duration-500 ${
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-white/80 backdrop-blur-sm transition-all duration-500 ${
                               isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                             }`}
                             style={{
@@ -276,14 +321,14 @@ export default function FocusSlider() {
                   aria-label={s.label}
                   onClick={() => go(i)}
                   className={`rounded-full transition-all duration-300 ${
-                    i === active ? 'w-6 h-1.5' : 'w-1.5 h-1.5 bg-border hover:bg-primary/40'
+                    i === active ? 'w-6 h-1.5' : 'w-1.5 h-1.5 bg-[#B9CCE6] hover:bg-primary/50'
                   }`}
                   style={i === active ? { background: s.accent } : undefined}
                 />
               ))}
             </div>
 
-            <div className="flex-1 h-[3px] rounded-full bg-border/60 overflow-hidden" aria-hidden>
+            <div className="flex-1 h-[3px] rounded-full bg-[#DCE3EC] overflow-hidden" aria-hidden>
               <div
                 key={`${active}-${paused}-${reduced}`}
                 className="h-full rounded-full"
@@ -299,7 +344,7 @@ export default function FocusSlider() {
 
           {/* ══ Closing line ══ */}
           <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="text-[11px] text-text-secondary/70 font-medium leading-snug">
+            <p className="text-[11px] text-text-secondary font-medium leading-snug">
               {SPECIALITY.summary}
             </p>
             <Link
@@ -310,6 +355,7 @@ export default function FocusSlider() {
               <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
+
         </div>
       </section>
     </div>

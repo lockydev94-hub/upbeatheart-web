@@ -322,7 +322,7 @@ function ShieldHero({ active, color }: { active: boolean; color: string }) {
             style={{
               transformBox: 'fill-box' as any,
               transformOrigin: '50% 50%',
-              animation: active ? 'growIn 1.4s cubic-bezier(0.22,1,0.36,1) both, pulseGlow 2.4s ease-in-out 1.4s infinite' : 'none',
+              animation: active ? 'ctGrowIn 1.4s cubic-bezier(0.22,1,0.36,1) both, ctPulseGlow 2.4s ease-in-out 1.4s infinite' : 'none',
               opacity: 0.5,
             }} />
       {/* heart inside */}
@@ -334,8 +334,8 @@ function ShieldHero({ active, color }: { active: boolean; color: string }) {
               animation: active ? 'heartbeat 2.4s ease-in-out 1.6s infinite' : 'none',
             }} />
       <style>{`
-        @keyframes growIn { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes pulseGlow {
+        @keyframes ctGrowIn { 0% { opacity: 0; transform: scale(0.6); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes ctPulseGlow {
           0%,100% { filter: drop-shadow(0 0 0 ${color}00); }
           50%     { filter: drop-shadow(0 0 10px ${color}); }
         }
@@ -377,13 +377,13 @@ function PaedsHero({ active, color }: { active: boolean; color: string }) {
         <g key={i} style={{
               transformBox: 'fill-box' as any,
               transformOrigin: '50% 50%',
-              animation: active ? `popIn 1.8s ease-in-out ${s.d} infinite` : 'none',
+              animation: active ? `ctSparklePop 1.8s ease-in-out ${s.d} infinite` : 'none',
             }}>
           <circle cx={s.x} cy={s.y} r="1.8" fill={color} />
        </g>
       ))}
       <style>{`
-        @keyframes popIn {
+        @keyframes ctSparklePop {
           0%, 100% { transform: scale(0.4); opacity: 0; }
           50%      { transform: scale(1.4); opacity: 1; }
         }

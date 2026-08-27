@@ -64,7 +64,7 @@ const MORE_LINKS = [
   { label: 'FAQ',          href: '/faq',      icon: HelpCircle,desc: 'Common questions answered'       },
 ]
 
-/* â”€â”€ WhatsApp icon â”€â”€ */
+/* ── WhatsApp icon ── */
 function WhatsAppIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size} className={className} aria-hidden>
@@ -73,7 +73,7 @@ function WhatsAppIcon({ size = 16, className = '' }: { size?: number; className?
   )
 }
 
-/* â”€â”€ Hook: clamp a dropdown so it never overflows the viewport â”€â”€ */
+/* ── Hook: clamp a dropdown so it never overflows the viewport ── */
 function useClampedDropdown(open: boolean) {
   const wrapRef  = useRef<HTMLDivElement>(null)   // the relative wrapper
   const dropRef  = useRef<HTMLDivElement>(null)   // the absolute dropdown
@@ -109,7 +109,7 @@ function useClampedDropdown(open: boolean) {
   return { wrapRef, dropRef, style }
 }
 
-/* â”€â”€ Diseases mega-menu â”€â”€ */
+/* ── Diseases mega-menu ── */
 function DiseasesMegaMenu({
   diseases, isActive, open,
 }: { diseases: Disease[]; isActive: (h: string) => boolean; open: boolean }) {
@@ -193,7 +193,7 @@ function DiseasesMegaMenu({
   )
 }
 
-/* â”€â”€ Blogs mega-menu â”€â”€ */
+/* ── Blogs mega-menu ── */
 function BlogsMegaMenu({
   blogs, isActive, open,
 }: { blogs: Blog[]; isActive: (h: string) => boolean; open: boolean }) {
@@ -270,7 +270,7 @@ function BlogsMegaMenu({
   )
 }
 
-/* â”€â”€ More dropdown (4-col) â”€â”€ */
+/* ── More dropdown (4-col) ── */
 function MoreDropdown({
   isActive, open,
 }: { isActive: (h: string) => boolean; open: boolean }) {
@@ -323,7 +323,7 @@ function MoreDropdown({
   )
 }
 
-/* â”€â”€ Main Navbar â”€â”€ */
+/* ── Main Navbar ── */
 export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarProps) {
   const [scrolled,   setScrolled]   = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -363,7 +363,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
 
   return (
     <>
-      {/* â”€â”€ Slim top bar â”€â”€ */}
+      {/* ── Slim top bar ── */}
       <div className="hidden md:block bg-navy text-white/80 text-xs py-2 border-b border-white/5">
         <div className="container-max px-4 md:px-8 flex items-center justify-between gap-4">
           <span className="flex items-center gap-2 truncate">
@@ -395,7 +395,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
         </div>
       </div>
 
-      {/* â”€â”€ Main header â”€â”€ */}
+      {/* ── Main header ── */}
       <header className={`sticky top-0 z-40 w-full transition-all duration-300 ${
         scrolled
           ? 'bg-white/95 backdrop-blur-md shadow-[0_2px_20px_rgba(21,101,216,0.08)] border-b border-border/60'
@@ -430,7 +430,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
               )}
             </Link>
 
-            {/* â”€â”€ Desktop nav â”€â”€ */}
+            {/* ── Desktop nav ── */}
             <nav ref={navRef} className="hidden lg:flex items-center gap-0.5">
 
               {/* Static links */}
@@ -641,7 +641,7 @@ export default function Navbar({ settings, diseases = [], blogs = [] }: NavbarPr
          </div>
        </div>
 
-        {/* â”€â”€ Mobile drawer â”€â”€ */}
+        {/* ── Mobile drawer ── */}
         <div className={`lg:hidden border-t border-border/40 bg-white overflow-hidden transition-all duration-300 ${
           mobileOpen ? 'max-h-[calc(100vh-76px)] overflow-y-auto' : 'max-h-0'
         }`}>

@@ -166,7 +166,7 @@ export default async function ReviewsPage() {
       patientName: r.patientName,
       rating:      r.rating,
       text:        r.text,
-      publishedAt: r.createdAt?.toDate?.()?.toISOString?.() ?? undefined,
+      publishedAt: r.createdAt ?? undefined,
     })),
     orgName: settings?.hospitalName ?? 'UpBeat Heart',
   })
@@ -415,7 +415,7 @@ export default async function ReviewsPage() {
                     {[
                       { href: '/appointment', label: 'Book an Appointment' },
                       { href: '/patient-assistance', label: 'Patient Assistance' },
-                      { href: '/treatments', label: 'Cardiac Treatments' },
+                      { href: '/diseases', label: 'Cardiac Treatments' },
                       { href: '/about', label: 'About the Doctor' },
                     ].map(link => (
                       <Link

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
+import { unstable_cache } from 'next/cache'
 import '../styles/globals.css'
 import { getSiteSettings } from '@/lib/firestore/settings'
 import { getPublishedDiseases } from '@/lib/firestore/diseases'
@@ -15,6 +16,20 @@ const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
   display: 'swap',
 })
+
+// Navbar mega-menu data — cached so the root layout doesn't hit Firestore
+// on every single request. Bust via revalidateTag('content').
+const getNavData = unstable_cache(
+  async () => {
+    const [allDiseases, allBlogs] = await Promise.all([
+      getPublishedDiseases(50),
+      getPublishedBlogs(20),
+    ])
+    return { allDiseases, allBlogs }
+  },
+  ['nav-data'],
+  { revalidate: 300, tags: ['content'] },
+)
 
 export async function generateMetadata(): Promise<Metadata> {
   const s = await getSiteSettings()
@@ -34,11 +49,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Fetch 6 random diseases and 6 latest blogs for navbar mega-menus
-  const [settings, allDiseases, allBlogs] = await Promise.all([
-    getSiteSettings(),
-    getPublishedDiseases(50),
-    getPublishedBlogs(20),
-  ])
+  const settings = await getSiteSettings()
+  const { allDiseases, allBlogs } = await getNavData()
   // Shuffle diseases for variety on each deploy/revalidate
   const shuffled = [...allDiseases].sort(() => Math.random() - 0.5)
   const navDiseases = shuffled.slice(0, 6)
@@ -75,6 +87,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           address={settings.address || ''}
           clinicHours={settings.clinicHours || []}
           appointmentsOpen={settings.appointmentsOpen ?? true}
+          doctorName={settings.doctorName || ''}
+          hospitalName={settings.hospitalName || ''}
         />
       </body>
     </html>
