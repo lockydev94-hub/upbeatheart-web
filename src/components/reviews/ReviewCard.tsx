@@ -1,4 +1,5 @@
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
 import { Quote, Play, ExternalLink, BadgeCheck } from 'lucide-react'
 import StarRating from './StarRating'
 import type { Review } from '@/types/firestore'
@@ -13,7 +14,7 @@ function Avatar({ review }: { review: Review }) {
     return (
       <div className="relative w-11 h-11 rounded-full shrink-0 border-2 border-white shadow-md overflow-hidden">
         <LazyImage
-          src={review.photoURL}
+          src={cld.avatarSm(review.photoURL)}
           alt={review.patientName}
           revealBlur
           className="absolute inset-0 w-full h-full object-cover"

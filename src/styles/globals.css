@@ -691,3 +691,145 @@
     transition: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADVANCED SCROLL REVEAL SYSTEM
+
+   Driven by <Reveal> and useScrollReveal. Each effect declares only its
+   hidden state; the shared rules below handle the transition and the
+   finished state. Effects replay on every pass — down, back up, down
+   again — and directional ones flip their entry side to match the way
+   the visitor is travelling (`data-dir`).
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-reveal] {
+  transition-property: opacity, transform, filter, clip-path;
+  transition-duration: var(--rv-dur, 850ms);
+  transition-delay: var(--rv-delay, 0ms);
+  transition-timing-function: var(--rv-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+[data-reveal][data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Re-arming always happens off-screen, so snap straight back to the hidden
+   state rather than animating out. This also stops long stagger delays from
+   queueing up behind the visitor on the way past. */
+[data-reveal][data-visible='false'] {
+  transition-duration: 0ms;
+  transition-delay: 0ms;
+}
+
+/* ── Vertical ─────────────────────────────────────────────────────── */
+[data-reveal='fade-up'][data-visible='false']                  { opacity: 0; transform: translate3d(0, 46px, 0); }
+[data-reveal='fade-up'][data-visible='false'][data-dir='up']    { transform: translate3d(0, -46px, 0); }
+[data-reveal='fade-down'][data-visible='false']                { opacity: 0; transform: translate3d(0, -42px, 0); }
+[data-reveal='fade-down'][data-visible='false'][data-dir='up']  { transform: translate3d(0, 42px, 0); }
+
+/* ── Horizontal ───────────────────────────────────────────────────── */
+[data-reveal='slide-left'][data-visible='false']   { opacity: 0; transform: translate3d(-60px, 0, 0); }
+[data-reveal='slide-right'][data-visible='false']  { opacity: 0; transform: translate3d(60px, 0, 0); }
+[data-reveal='drift-left'][data-visible='false']   { opacity: 0; transform: translate3d(-72px, 18px, 0) rotate(-2.5deg); }
+[data-reveal='drift-right'][data-visible='false']  { opacity: 0; transform: translate3d(72px, 18px, 0) rotate(2.5deg); }
+
+/* ── Scale ────────────────────────────────────────────────────────── */
+[data-reveal='zoom-in'][data-visible='false']    { opacity: 0; transform: scale(0.86); }
+[data-reveal='zoom-out'][data-visible='false']   { opacity: 0; transform: scale(1.14); }
+[data-reveal='pop-center']                       { --rv-ease: cubic-bezier(0.34, 1.56, 0.64, 1); --rv-dur: 700ms; }
+[data-reveal='pop-center'][data-visible='false'] { opacity: 0; transform: scale(0.55); }
+[data-reveal='pulse-in']                         { --rv-ease: cubic-bezier(0.16, 1.4, 0.3, 1); --rv-dur: 900ms; }
+[data-reveal='pulse-in'][data-visible='false']   { opacity: 0; transform: scale(0.9); }
+
+/* ── Focus and light ──────────────────────────────────────────────── */
+[data-reveal='blur-rise'][data-visible='false']  { opacity: 0; transform: translate3d(0, 34px, 0); filter: blur(16px); }
+[data-reveal='spotlight'][data-visible='false']  { opacity: 0; transform: translate3d(0, 42px, 0) scale(0.97);
+                                                   filter: brightness(0.8) saturate(0.6); }
+
+/* ── 3D ───────────────────────────────────────────────────────────── */
+[data-reveal='flip-y'],
+[data-reveal='flip-x'],
+[data-reveal='tilt-settle'] { backface-visibility: hidden; }
+
+[data-reveal='flip-y'][data-visible='false']                    { opacity: 0; transform: perspective(1300px) rotateY(-34deg) translate3d(46px, 0, 0); }
+[data-reveal='flip-y'][data-visible='false'][data-dir='up']     { transform: perspective(1300px) rotateY(34deg) translate3d(-46px, 0, 0); }
+[data-reveal='flip-x'][data-visible='false']                    { opacity: 0; transform: perspective(1300px) rotateX(38deg) translate3d(0, 44px, 0);
+                                                                  transform-origin: 50% 100%; }
+[data-reveal='flip-x'][data-visible='false'][data-dir='up']     { transform: perspective(1300px) rotateX(-38deg) translate3d(0, -44px, 0);
+                                                                  transform-origin: 50% 0%; }
+[data-reveal='tilt-settle'][data-visible='false']               { opacity: 0; transform: perspective(1100px) rotateX(18deg) rotateZ(-3deg)
+                                                                  scale(0.93) translate3d(0, 40px, 0); }
+
+/* ── Skew and rotate ──────────────────────────────────────────────── */
+[data-reveal='skew-rise'][data-visible='false']                 { opacity: 0; transform: translate3d(0, 54px, 0) skewY(4.5deg) scale(0.97); }
+[data-reveal='rotate-in'][data-visible='false']                 { opacity: 0; transform: rotate(-7deg) scale(0.9) translate3d(0, 32px, 0); }
+[data-reveal='rotate-in'][data-visible='false'][data-dir='up']  { transform: rotate(7deg) scale(0.9) translate3d(0, -32px, 0); }
+[data-reveal='unfold']                                          { --rv-dur: 750ms; }
+[data-reveal='unfold'][data-visible='false']                    { opacity: 0; transform: scaleY(0.4) translate3d(0, -12px, 0);
+                                                                  transform-origin: 50% 0%; }
+
+/* ── Clip and mask ────────────────────────────────────────────────────
+   The finished state uses negative insets so card shadows and hover-lift
+   are not clipped by the leftover clip-path once the wipe has landed. */
+[data-reveal='curtain-up'][data-visible='false'] { opacity: 0.001; clip-path: inset(100% -30% -30% -30%); transform: translate3d(0, 20px, 0); }
+[data-reveal='curtain-up'][data-visible='true']  { clip-path: inset(-30% -30% -30% -30%); }
+[data-reveal='wipe-right'][data-visible='false'] { opacity: 0.001; clip-path: inset(-30% 100% -30% -30%); }
+[data-reveal='wipe-right'][data-visible='true']  { clip-path: inset(-30% -30% -30% -30%); }
+[data-reveal='wipe-left'][data-visible='false']  { opacity: 0.001; clip-path: inset(-30% -30% -30% 100%); }
+[data-reveal='wipe-left'][data-visible='true']   { clip-path: inset(-30% -30% -30% -30%); }
+[data-reveal='mask-zoom'][data-visible='false']  { opacity: 0; clip-path: inset(16% 16% 16% 16% round 22px); transform: scale(1.12); }
+[data-reveal='mask-zoom'][data-visible='true']   { clip-path: inset(-30% -30% -30% -30% round 0px); }
+
+/* ── Reusable accents that pair with a reveal ─────────────────────────
+   These are @keyframes rather than transitions, so they need remounting to
+   replay. Sections key the element on the hook's `cycle` counter. */
+@keyframes rvLineGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes rvSheen {
+  from { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 0.55; }
+  to   { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+}
+.rv-line-grow {
+  transform-origin: left center;
+  animation: rvLineGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rv-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.rv-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: rvSheen 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s both;
+}
+
+/* Filters are the one expensive part of this system — drop them on small
+   screens and keep the transform half of the effect. */
+@media (max-width: 640px) {
+  [data-reveal='blur-rise'][data-visible='false'],
+  [data-reveal='spotlight'][data-visible='false'] { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+  .rv-line-grow, .rv-sheen::after { animation: none !important; }
+  .rv-sheen { display: none !important; }
+}

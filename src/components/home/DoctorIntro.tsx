@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Award, GraduationCap, Building2, ArrowRight, CheckCircle2 } from 'lucide-react'
 import type { SiteSettings } from '@/types/firestore'
 import { cld } from '@/lib/cloudinary'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props { settings: SiteSettings }
 
@@ -15,42 +16,26 @@ const QUALIFICATIONS = [
   { icon: Award,         label: 'Cardiology DM',  note: 'DM (Cardiology) — Super-Specialist' },
 ]
 
-function useScrollReveal(threshold = 0.12) {
-  const ref = useRef<HTMLElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible }
-}
-
 export default function DoctorIntro({ settings }: Props) {
-  const { ref, visible } = useScrollReveal(0.1)
+  // Signature effect: the portrait tips upright out of a 3D fold while the bio
+  // slides in beside it. Replays on every pass, both directions.
+  const { ref, visible, direction } = useScrollReveal<HTMLElement>({ offset: 0.1 })
   const quals = settings.doctorQuals?.split(',').map(q => q.trim()).filter(Boolean) ?? []
 
   return (
     <section
-      ref={ref as React.RefObject<HTMLElement>}
+      ref={ref}
       className="py-16 md:py-24 bg-white overflow-hidden"
     >
       <div className="container-max px-4 md:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-          {/* ── Left: Doctor photo — slides in from left ── */}
-          <div
+          {/* ── Left: Doctor photo — tips upright out of a fold ── */}
+          <Reveal
+            effect="flip-x"
+            visible={visible}
+            direction={direction}
             className="relative flex items-center justify-center lg:justify-start"
-            style={{
-              opacity:    visible ? 1 : 0,
-              transform:  visible ? 'none' : 'translateX(-48px)',
-              transition: 'opacity 0.75s cubic-bezier(0.22,1,0.36,1), transform 0.75s cubic-bezier(0.22,1,0.36,1)',
-            }}
           >
             {/* Background blob — rotates slowly */}
             <div className="absolute inset-0 pointer-events-none" aria-hidden>
@@ -152,29 +137,27 @@ export default function DoctorIntro({ settings }: Props) {
                 </div>
               )}
             </div>
-          </div>
+          </Reveal>
 
           {/* ── Right: Bio + qualifications + CTA — slides in from right ── */}
-          <div
+          <Reveal
+            effect="slide-right"
+            delay={120}
+            visible={visible}
+            direction={direction}
             className="space-y-6"
-            style={{
-              opacity:    visible ? 1 : 0,
-              transform:  visible ? 'none' : 'translateX(48px)',
-              transition: 'opacity 0.75s cubic-bezier(0.22,1,0.36,1) 0.1s, transform 0.75s cubic-bezier(0.22,1,0.36,1) 0.1s',
-            }}
           >
             {/* Eyebrow */}
-            <div
+            <Reveal
+              effect="fade-down"
+              delay={220}
+              visible={visible}
+              direction={direction}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest"
-              style={{
-                opacity:    visible ? 1 : 0,
-                transform:  visible ? 'none' : 'translateY(-12px)',
-                transition: 'opacity 0.5s ease 0.2s, transform 0.5s ease 0.2s',
-              }}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               Meet Your Cardiologist
-            </div>
+            </Reveal>
 
             {/* Heading with shimmer on name */}
             <div>
@@ -190,34 +173,34 @@ export default function DoctorIntro({ settings }: Props) {
 
             {/* Bio */}
             {settings.doctorBio && (
-              <p
+              <Reveal
+                as="p"
+                effect="fade-up"
+                delay={350}
+                visible={visible}
+                direction={direction}
                 className="text-text-secondary text-base leading-relaxed"
-                style={{
-                  opacity:    visible ? 1 : 0,
-                  transform:  visible ? 'none' : 'translateY(16px)',
-                  transition: 'opacity 0.6s ease 0.35s, transform 0.6s ease 0.35s',
-                }}
               >
                 {settings.doctorBio}
-              </p>
+              </Reveal>
             )}
 
             {/* Qualifications pills — staggered pop-in */}
             {quals.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {quals.map((q, i) => (
-                  <span
+                  <Reveal
                     key={q}
+                    as="span"
+                    effect="pop-center"
+                    delay={400 + i * 70}
+                    visible={visible}
+                    direction={direction}
                     className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full bg-bg border border-border text-navy hover:border-primary/30 hover:bg-primary/4 transition-all duration-200"
-                    style={{
-                      opacity:    visible ? 1 : 0,
-                      transform:  visible ? 'none' : 'scale(0.8)',
-                      transition: `opacity 0.45s ease ${0.4 + i * 0.07}s, transform 0.45s cubic-bezier(0.22,1,0.36,1) ${0.4 + i * 0.07}s`,
-                    }}
                   >
                     <CheckCircle2 size={11} className="text-green shrink-0" />
                     {q}
-                  </span>
+                  </Reveal>
                 ))}
               </div>
             )}
@@ -225,34 +208,33 @@ export default function DoctorIntro({ settings }: Props) {
             {/* Achievement cards — staggered slide-up */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {QUALIFICATIONS.map(({ icon: Icon, label, note }, i) => (
-                <div
+                <Reveal
                   key={label}
-                  className="flex items-start gap-3 p-3.5 rounded-xl bg-bg border border-border hover:border-primary/30 hover:shadow-[0_4px_18px_rgba(21,101,216,0.10)] hover:-translate-y-0.5 transition-all duration-250 group"
-                  style={{
-                    opacity:    visible ? 1 : 0,
-                    transform:  visible ? 'none' : 'translateY(20px)',
-                    transition: `opacity 0.5s ease ${0.45 + i * 0.1}s, transform 0.5s cubic-bezier(0.22,1,0.36,1) ${0.45 + i * 0.1}s, box-shadow 0.2s ease, border-color 0.2s ease`,
-                  }}
+                  effect="fade-up"
+                  delay={450 + i * 100}
+                  visible={visible}
+                  direction={direction}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 group-hover:bg-primary/12 transition-transform duration-200">
-                    <Icon size={14} className="text-primary" />
+                  <div className="flex items-start gap-3 h-full p-3.5 rounded-xl bg-bg border border-border hover:border-primary/30 hover:shadow-[0_4px_18px_rgba(21,101,216,0.10)] hover:-translate-y-0.5 transition-all duration-200 group">
+                    <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 group-hover:bg-primary/12 transition-transform duration-200">
+                      <Icon size={14} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-extrabold text-navy leading-tight">{label}</p>
+                      <p className="text-[10px] text-text-secondary mt-0.5 leading-snug">{note}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold text-navy leading-tight">{label}</p>
-                    <p className="text-[10px] text-text-secondary mt-0.5 leading-snug">{note}</p>
-                  </div>
-                </div>
+                </Reveal>
               ))}
             </div>
 
             {/* CTA — fade up last */}
-            <div
+            <Reveal
+              effect="fade-up"
+              delay={700}
+              visible={visible}
+              direction={direction}
               className="flex flex-col sm:flex-row gap-3 pt-2"
-              style={{
-                opacity:    visible ? 1 : 0,
-                transform:  visible ? 'none' : 'translateY(20px)',
-                transition: 'opacity 0.5s ease 0.7s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.7s',
-              }}
             >
               <Link
                 href="/about"
@@ -267,8 +249,8 @@ export default function DoctorIntro({ settings }: Props) {
               >
                 Book Consultation
               </Link>
-            </div>
-          </div>
+            </Reveal>
+          </Reveal>
         </div>
       </div>
 

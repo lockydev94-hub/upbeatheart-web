@@ -2,6 +2,7 @@
 
 import type { SiteSettings } from '@/types/firestore'
 
+import useScrollProgress from '@/hooks/useScrollProgress'
 import DoctorPanel from './hero/DoctorPanel'
 import FocusSlider from './hero/FocusSlider'
 
@@ -13,34 +14,98 @@ interface HeroSectionProps {
  * HeroSection — medical symbols float across the full hero background.
  * Cards are clean glass (no hover-lift, no conic ring, no spotlight aura).
  * All ambient animation lives only in the background layer.
+ *
+ * Signature scroll effect: the hero is the one section driven by scroll
+ * POSITION rather than a reveal transition — it is already on screen when the
+ * page loads, so there is nothing to reveal. useScrollProgress feeds a
+ * continuous 0 → 1 value into layered parallax: light-fields lag behind, the
+ * symbol field and content run ahead and dissolve, and the wave divider swells.
+ * The hero therefore separates into planes and recedes as the page moves on.
+ * Scroll-linked motion is inherently reversible, so it plays in both
+ * directions, and the hook reports a flat 0 under prefers-reduced-motion.
  */
 export default function HeroSection({ settings }: HeroSectionProps) {
+  const { ref, progress } = useScrollProgress<HTMLElement>()
+
+  // The hero already fills the first screen, so raw progress sits at roughly
+  // 0.55 before anyone scrolls. Re-map the outgoing half onto 0 → 1 so every
+  // layer starts at rest and hits its full offset as the hero clears the view.
+  const p = Math.min(Math.max((progress - 0.55) / 0.45, 0), 1)
+
+  // Positive px = the layer lags behind the scroll and reads as depth;
+  // negative px = it runs ahead of the scroll and reads as foreground.
+  const drift = (px: number) => `translate3d(0, ${(p * px).toFixed(1)}px, 0)`
+
+  // Content holds full opacity through the first quarter so it stays readable
+  // while the hero is still framed, then fades out.
+  const dissolve = Math.min(Math.max((p - 0.25) / 0.6, 0), 1)
+
   return (
-    <section className="hero-shell relative overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F3F8FF_55%,#EAF3FF_100%)] text-[#143B7D]">
+    <section
+      ref={ref}
+      className="hero-shell relative overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F3F8FF_55%,#EAF3FF_100%)] text-[#143B7D]"
+    >
 
-      {/* ══ Soft static light-fields ══ */}
+      {/* ══ Soft light-fields — deepest plane, lags behind the scroll ══ */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
-        <div className="absolute -left-40 -top-44 w-[640px] h-[640px] rounded-full opacity-60"
-             style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.16) 0%, transparent 62%)', filter: 'blur(70px)' }} />
-        <div className="absolute -right-32 -top-20 w-[560px] h-[560px] rounded-full opacity-50"
-             style={{ background: 'radial-gradient(circle, rgba(24,184,230,0.14) 0%, transparent 62%)', filter: 'blur(80px)' }} />
-        <div className="absolute left-1/2 bottom-[-180px] -translate-x-1/2 w-[760px] h-[420px] rounded-full opacity-45"
-             style={{ background: 'radial-gradient(circle, rgba(24,181,90,0.12) 0%, transparent 66%)', filter: 'blur(90px)' }} />
-        <div className="absolute right-[6%] bottom-[10%] w-[420px] h-[420px] rounded-full opacity-40"
-             style={{ background: 'radial-gradient(circle, rgba(249,123,185,0.12) 0%, transparent 64%)', filter: 'blur(80px)' }} />
+        <div className="absolute -left-40 -top-44 w-[640px] h-[640px] rounded-full"
+             style={{
+               background: 'radial-gradient(circle, rgba(37,99,235,0.16) 0%, transparent 62%)',
+               filter: 'blur(70px)',
+               opacity: 0.6 - p * 0.34,
+               transform: `${drift(96)} scale(${(1 + p * 0.14).toFixed(4)})`,
+               willChange: 'transform, opacity',
+             }} />
+        <div className="absolute -right-32 -top-20 w-[560px] h-[560px] rounded-full"
+             style={{
+               background: 'radial-gradient(circle, rgba(24,184,230,0.14) 0%, transparent 62%)',
+               filter: 'blur(80px)',
+               opacity: 0.5 - p * 0.3,
+               transform: drift(146),
+               willChange: 'transform, opacity',
+             }} />
+        {/* Centring lives in the inline transform now, not -translate-x-1/2,
+            because an inline transform would otherwise override the class. */}
+        <div className="absolute left-1/2 bottom-[-180px] w-[760px] h-[420px] rounded-full"
+             style={{
+               background: 'radial-gradient(circle, rgba(24,181,90,0.12) 0%, transparent 66%)',
+               filter: 'blur(90px)',
+               opacity: 0.45 - p * 0.16,
+               transform: `translate3d(-50%, ${(p * -64).toFixed(1)}px, 0) scale(${(1 + p * 0.1).toFixed(4)})`,
+               willChange: 'transform, opacity',
+             }} />
+        <div className="absolute right-[6%] bottom-[10%] w-[420px] h-[420px] rounded-full"
+             style={{
+               background: 'radial-gradient(circle, rgba(249,123,185,0.12) 0%, transparent 64%)',
+               filter: 'blur(80px)',
+               opacity: 0.4 - p * 0.14,
+               transform: drift(-34),
+               willChange: 'transform, opacity',
+             }} />
 
-        {/* Faint blueprint grid */}
-        <div className="absolute inset-0 opacity-[0.035]"
+        {/* Faint blueprint grid — creeps down and thins out */}
+        <div className="absolute inset-0"
              style={{
                backgroundImage: 'linear-gradient(rgba(21,101,216,0.7) 1px, transparent 1px), linear-gradient(90deg, rgba(21,101,216,0.7) 1px, transparent 1px)',
                backgroundSize: '52px 52px',
                maskImage: 'radial-gradient(ellipse 90% 85% at 50% 35%, black 30%, transparent 75%)',
                WebkitMaskImage: 'radial-gradient(ellipse 90% 85% at 50% 35%, black 30%, transparent 75%)',
+               opacity: 0.035 - p * 0.02,
+               transform: drift(44),
+               willChange: 'transform, opacity',
              }} />
       </div>
 
-      {/* ══ Floating medical symbols ══ */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+      {/* ══ Floating medical symbols — foreground plane, runs ahead ══ */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        aria-hidden
+        style={{
+          transform: drift(-78),
+          opacity: 1 - dissolve * 0.6,
+          willChange: 'transform, opacity',
+        }}
+      >
 
         {/* ── Medical Cross ── */}
         <svg className="med-sym sym-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -137,9 +202,18 @@ export default function HeroSection({ settings }: HeroSectionProps) {
 
       </div>
 
-      {/* ══ Content ══ */}
-      <div className="container-max px-4 md:px-8 relative z-10">
-        <div className="hero-grid grid grid-cols-1 lg:grid-cols-[1.02fr_0.98fr] gap-10 lg:gap-14 items-center pt-10 pb-16 lg:pt-12 lg:pb-20">
+      {/* ══ Content — lifts, shrinks a touch and dissolves on the way out ══ */}
+      {/* Transform is applied only once scrolling starts so text stays pixel
+          -sharp at rest (a GPU layer at offset 0 can soften it). */}
+      <div
+        className="container-max px-4 md:px-8 relative z-10"
+        style={p > 0 ? {
+          transform: `translate3d(0, ${(p * -58).toFixed(1)}px, 0) scale(${(1 - p * 0.045).toFixed(4)})`,
+          opacity: 1 - dissolve * 0.75,
+          willChange: 'transform, opacity',
+        } : undefined}
+      >
+        <div className="hero-grid grid grid-cols-1 lg:grid-cols-[1.02fr_0.98fr] gap-10 lg:gap-14 items-center pt-8 pb-10 lg:pt-10 lg:pb-12">
           <DoctorPanel settings={settings} />
           <div className="w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto">
             <FocusSlider />
@@ -147,8 +221,18 @@ export default function HeroSection({ settings }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* ══ Wave divider ══ */}
-      <div className="absolute bottom-[-1px] left-0 right-0 z-10 pointer-events-none" aria-hidden>
+      {/* ══ Wave divider — swells upward, anchored to the bottom edge ══ */}
+      {/* Scaling (not translating) keeps it flush with the section boundary so
+          no seam ever opens between the wave and the next section. */}
+      <div
+        className="absolute bottom-[-1px] left-0 right-0 z-10 pointer-events-none"
+        aria-hidden
+        style={{
+          transform: `scaleY(${(1 + p * 0.42).toFixed(4)})`,
+          transformOrigin: 'bottom',
+          willChange: 'transform',
+        }}
+      >
         <svg viewBox="0 0 1440 70" preserveAspectRatio="none" className="w-full h-[42px] lg:h-[64px] block">
           <path d="M0 70 L0 44 C 240 6 480 6 720 30 C 960 54 1200 54 1440 24 L1440 70 Z" fill="#F8FAFC" />
         </svg>

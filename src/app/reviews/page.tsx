@@ -8,6 +8,7 @@ import StarRating              from '@/components/reviews/StarRating'
 import type { Review }         from '@/types/firestore'
 import ReviewSubmitModal       from '@/components/reviews/ReviewSubmitModal'
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
 import { aggregateRatingSchema, breadcrumbSchema, buildMetadata } from '@/lib/seo'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://upbeatheart.com'
@@ -103,7 +104,7 @@ function FeaturedVideoCard({ review }: { review: Review }) {
           {review.photoURL ? (
             <div className="relative w-14 h-14 rounded-2xl shrink-0 overflow-hidden border-2 border-white/30">
               <LazyImage
-                src={review.photoURL}
+                src={cld.avatarMd(review.photoURL)}
                 alt={review.patientName}
                 revealBlur
                 className="absolute inset-0 w-full h-full object-cover"

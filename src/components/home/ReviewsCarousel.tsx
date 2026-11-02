@@ -6,6 +6,8 @@ import Link from 'next/link'
 import ReviewCard from '@/components/reviews/ReviewCard'
 import StarRating from '@/components/reviews/StarRating'
 import type { Review } from '@/types/firestore'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props { reviews: Review[] }
 
@@ -13,23 +15,17 @@ interface Props { reviews: Review[] }
 // reviews the section hides itself rather than show fake patient stories.
 
 export default function ReviewsCarousel({ reviews }: Props) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [sectionVisible, setSectionVisible] = useState(false)
+  // Signature effect: the header wipes in from the right and the carousel
+  // slides in behind it, echoing the way the track itself moves.
+  const {
+    ref: sectionRef,
+    visible: sectionVisible,
+    direction,
+  } = useScrollReveal<HTMLElement>({ offset: 0.1 })
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
   const [perPage, setPerPage] = useState(3)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setSectionVisible(true); obs.disconnect() } },
-      { threshold: 0.1 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
 
   // Detect responsive columns
   useEffect(() => {
@@ -62,19 +58,17 @@ export default function ReviewsCarousel({ reviews }: Props) {
 
   return (
     <section
-      ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-16 md:py-24 bg-white overflow-hidden"
+      ref={sectionRef}
+      className="py-10 md:py-12 bg-white overflow-hidden"
     >
       <div className="container-max px-4 md:px-8">
 
         {/* ── Section header ── */}
-        <div
-          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10"
-          style={{
-            opacity:    sectionVisible ? 1 : 0,
-            transform:  sectionVisible ? 'none' : 'translateY(-20px)',
-            transition: 'opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1)',
-          }}
+        <Reveal
+          effect="wipe-left"
+          visible={sectionVisible}
+          direction={direction}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-7"
         >
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold uppercase tracking-widest mb-4">
@@ -105,23 +99,22 @@ export default function ReviewsCarousel({ reviews }: Props) {
               All Reviews <ArrowRight size={15} />
             </Link>
           </div>
-        </div>
+        </Reveal>
 
         {/* ── Carousel ── */}
-        <div
+        <Reveal
+          effect="slide-right"
+          delay={200}
+          visible={sectionVisible}
+          direction={direction}
           className="relative"
-          style={{
-            opacity:    sectionVisible ? 1 : 0,
-            transform:  sectionVisible ? 'none' : 'translateY(32px)',
-            transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1) 0.2s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.2s',
-          }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
           <div className="overflow-hidden">
             <div
               className="flex gap-5 transition-transform duration-500 ease-in-out"
-              style={{ transform: `translateX(calc(-${current} * (100% / ${perPage} + ${perPage > 1 ? 20 : 0}px / ${perPage})))` }}
+              style={{ transform: `translateX(calc(-${current} * (100% / ${perPage} + 20px / ${perPage})))` }}
             >
               {displayReviews.map((review) => (
                 <div
@@ -141,7 +134,7 @@ export default function ReviewsCarousel({ reviews }: Props) {
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-center gap-3 mt-8">
+          <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={prev}
               disabled={current === 0}
@@ -185,7 +178,7 @@ export default function ReviewsCarousel({ reviews }: Props) {
               All Reviews <ArrowRight size={15} />
             </Link>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   )

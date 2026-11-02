@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Calendar, ArrowRight, Search, Tag, X, Clock } from 'lucide-react'
 import type { Blog } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
 
 const ALL = 'All'
 
@@ -117,11 +118,11 @@ function BlogCard({ blog, featured = false }: { blog: Blog; featured?: boolean }
       href={`/blogs/${blog.slug}`}
       className={`group flex flex-col bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-[0_8px_40px_rgba(21,101,216,0.13)] hover:border-primary/20 transition-all duration-300 ${featured ? 'md:flex-row lg:col-span-3 md:col-span-2' : ''}`}
     >
-      {/* Cover image */}
-      <div className={`relative overflow-hidden bg-bg shrink-0 ${featured ? 'h-56 md:h-auto md:w-5/12 lg:w-2/5' : 'h-48'}`}>
+      {/* Cover image — 1200×630 is the ratio the admin crop produces */}
+      <div className={`relative overflow-hidden bg-bg shrink-0 ${featured ? 'h-56 md:h-auto md:w-5/12 lg:w-2/5' : 'aspect-[1200/630]'}`}>
         {blog.coverImage ? (
           <LazyImage
-            src={blog.coverImage}
+            src={cld.cover(blog.coverImage)}
             alt={blog.title}
             revealBlur revealScale
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

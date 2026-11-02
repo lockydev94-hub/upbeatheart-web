@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -11,36 +11,31 @@ import {
 } from 'lucide-react'
 import type { Campaign } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
+import useScrollReveal from '@/hooks/useScrollReveal'
 
 // ─── Animated progress bar ────────────────────────────────────────────────────
 function ProgressBar({ raised, goal }: { raised: number; goal: number }) {
-  const ref    = useRef<HTMLDivElement>(null)
+  const { ref, visible } = useScrollReveal<HTMLDivElement>({ offset: 0.05 })
   const [pct, setPct] = useState(0)
   const target = Math.min(Math.round((raised / Math.max(goal, 1)) * 100), 100)
 
+  // Fill on every pass: count up whenever the bar comes into view and rewind to
+  // zero once it leaves, so it fills again next time instead of sitting full.
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          const start = performance.now()
-          const dur   = 1400
-          const tick  = (now: number) => {
-            const t    = Math.min((now - start) / dur, 1)
-            const ease = 1 - Math.pow(1 - t, 3)
-            setPct(Math.round(ease * target))
-            if (t < 1) requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.5 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [target])
+    if (!visible) { setPct(0); return }
+    let frame = 0
+    const start = performance.now()
+    const dur   = 1400
+    const tick  = (now: number) => {
+      const t = Math.min((now - start) / dur, 1)
+      const ease = 1 - Math.pow(1 - t, 3)
+      setPct(Math.round(ease * target))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [visible, target])
 
   return (
     <div ref={ref}>
@@ -606,9 +601,11 @@ export default function CampaignDetailContent({ campaign, settings, related }: P
             {/* Photo gallery */}
             {photos.length > 0 && (
               <div className="space-y-3">
-                <div className="relative rounded-2xl overflow-hidden bg-navy aspect-video">
+                {/* 4:3 rather than 16:9 — campaign photos are free-form uploads
+                    and landscape shots lose their subject to a wide crop. */}
+                <div className="relative rounded-2xl overflow-hidden bg-navy aspect-[4/3]">
                   <LazyImage
-                    src={photos[activePhoto]}
+                    src={cld.cover(photos[activePhoto])}
                     alt={`${firstName} photo ${activePhoto + 1}`}
                     revealBlur
                     rootMargin="0px"
@@ -744,7 +741,7 @@ export default function CampaignDetailContent({ campaign, settings, related }: P
                   {settings.doctorPhotoUrl ? (
                     <div className="relative w-11 h-11 rounded-full shrink-0 overflow-hidden border-2 border-primary/20">
                       <LazyImage
-                        src={settings.doctorPhotoUrl}
+                        src={cld.avatarSm(settings.doctorPhotoUrl)}
                         alt={settings.doctorName}
                         revealBlur
                         className="absolute inset-0 w-full h-full object-cover"

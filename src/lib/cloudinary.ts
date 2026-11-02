@@ -58,10 +58,17 @@ export const cld = {
   logo:        (url?: string | null) => cloudinaryResize(url, 320),
   /** Favicon / small icon: 64×64 */
   favicon:     (url?: string | null) => cloudinaryResize(url, 64, 64),
-  /** Doctor avatar small (navbar, footer): 80×80 */
-  avatarSm:    (url?: string | null) => cloudinaryResize(url, 80, 80),
+  /**
+   * Doctor / review avatar for a round badge.
+   * Sources are 3:4 portraits (admin crops doctor photos to 600×800), so a
+   * plain square fit returns a non-filling image and CSS then centre-crops,
+   * which can slice the head off. g_face keeps the face in frame.
+   */
+  avatarSm:    (url?: string | null) => cloudinaryPortrait(url, 88, 88, 0.7),
+  /** Round avatar rendered at ~56px (blog / campaign author strip) */
+  avatarMd:    (url?: string | null) => cloudinaryPortrait(url, 128, 128, 0.7),
   /** Doctor avatar large (about page): 400×400 */
-  avatarLg:    (url?: string | null) => cloudinaryResize(url, 400, 400),
+  avatarLg:    (url?: string | null) => cloudinaryPortrait(url, 400, 400, 0.7),
   /** OG image: 1200×630 */
   og:          (url?: string | null) => cloudinaryResize(url, 1200, 630),
   /** Blog / campaign cover: 800px wide */

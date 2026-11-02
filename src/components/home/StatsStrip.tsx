@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Users, CalendarCheck, Heart, Handshake } from 'lucide-react'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface StatItem {
   icon: React.ElementType
@@ -17,16 +19,16 @@ interface StatItem {
 const STATS: StatItem[] = [
   {
     icon: Users,
-    value: 10000, suffix: '+',
+    value: 1000, suffix: '+',
     label: 'Patients Treated',
     desc: 'Lives touched through expert cardiology care',
     accent: 'bg-primary/8', iconColor: 'text-primary', border: 'border-primary/15',
   },
   {
     icon: CalendarCheck,
-    value: 15, suffix: '+',
+    value: 10, suffix: '+',
     label: 'Years Experience',
-    desc: 'Dedicated decades of cardiac specialisation',
+    desc: 'Over a decade of dedicated cardiac specialisation',
     accent: 'bg-cyan/8', iconColor: 'text-cyan', border: 'border-cyan/20',
   },
   {
@@ -38,7 +40,7 @@ const STATS: StatItem[] = [
   },
   {
     icon: Handshake,
-    value: 30, suffix: '+',
+    value: 5, suffix: '+',
     label: 'NGO Partners',
     desc: 'Trusted organisations in our care network',
     accent: 'bg-navy/6', iconColor: 'text-navy', border: 'border-navy/15',
@@ -72,22 +74,11 @@ function AnimatedCounter({ value, suffix, active, color }: { value: number; suff
 }
 
 export default function StatsStrip() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setActive(true); obs.disconnect() } },
-      { threshold: 0.2 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  // Signature effect: cards pop in from the centre, counters re-run on every pass.
+  const { ref, visible, direction, cycle } = useScrollReveal<HTMLElement>({ offset: 0.1 })
 
   return (
-    <section ref={ref} className="relative overflow-hidden bg-bg py-14 md:py-20">
+    <section ref={ref} className="relative overflow-hidden bg-bg py-8 md:py-10">
 
       {/* Subtle top border accent */}
       <div
@@ -106,53 +97,57 @@ export default function StatsStrip() {
       <div className="container-max px-4 md:px-8 relative z-10">
 
         {/* Section label */}
-        <p className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-10">
+        <Reveal
+          as="p"
+          effect="fade-down"
+          visible={visible}
+          direction={direction}
+          className="text-center text-[11px] font-bold uppercase tracking-[0.18em] text-text-secondary mb-6"
+        >
           Trusted by thousands across the region
-        </p>
+        </Reveal>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
           {STATS.map(({ icon: Icon, value, suffix, label, desc, accent, iconColor, border }, i) => (
-            <div
+            <Reveal
               key={label}
-              className="group relative flex flex-col items-center text-center bg-white rounded-2xl border border-border px-5 py-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(21,101,216,0.05)] hover:shadow-[0_4px_24px_rgba(21,101,216,0.12)] hover:-translate-y-0.5 transition-all duration-300"
-              style={{ animation: active ? `fadeSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 0.1}s both` : 'none' }}
+              effect="pop-center"
+              delay={i * 110}
+              visible={visible}
+              direction={direction}
+              className="h-full"
             >
-              {/* Top gradient bar per card */}
-              <div
-                className="absolute top-0 left-6 right-6 h-[2px] rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: 'linear-gradient(90deg, #1565D8, #18B8E6, #18B55A)' }}
-                aria-hidden
-              />
+              <div className="group relative h-full flex flex-col items-center text-center bg-white rounded-2xl border border-border px-5 py-7 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(21,101,216,0.05)] hover:shadow-[0_4px_24px_rgba(21,101,216,0.12)] hover:-translate-y-0.5 transition-all duration-300">
+                {/* Top gradient bar per card */}
+                <div
+                  className="absolute top-0 left-6 right-6 h-[2px] rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(90deg, #1565D8, #18B8E6, #18B55A)' }}
+                  aria-hidden
+                />
 
-              {/* Icon */}
-              <div className={`w-11 h-11 rounded-xl ${accent} border ${border} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200`}>
-                <Icon size={20} className={iconColor} />
+                {/* Icon */}
+                <div className={`w-11 h-11 rounded-xl ${accent} border ${border} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-200`}>
+                  <Icon size={20} className={iconColor} />
+                </div>
+
+                {/* Counter */}
+                <p className="text-3xl md:text-4xl font-extrabold text-navy leading-none tracking-tight mb-1.5">
+                  <AnimatedCounter key={cycle} value={value} suffix={suffix} active={visible} color={iconColor} />
+                </p>
+
+                {/* Label */}
+                <p className="text-[13px] font-bold text-navy mb-1">{label}</p>
+
+                {/* Divider */}
+                <div className={`w-8 h-[2px] rounded-full ${accent} mb-2`} />
+
+                {/* Desc */}
+                <p className="text-[11px] text-text-secondary leading-snug">{desc}</p>
               </div>
-
-              {/* Counter */}
-              <p className="text-3xl md:text-4xl font-extrabold text-navy leading-none tracking-tight mb-1.5">
-                <AnimatedCounter value={value} suffix={suffix} active={active} color={iconColor} />
-              </p>
-
-              {/* Label */}
-              <p className="text-[13px] font-bold text-navy mb-1">{label}</p>
-
-              {/* Divider */}
-              <div className={`w-8 h-[2px] rounded-full ${accent} mb-2`} />
-
-              {/* Desc */}
-              <p className="text-[11px] text-text-secondary leading-snug">{desc}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </section>
   )
 }

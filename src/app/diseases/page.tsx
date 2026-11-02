@@ -33,7 +33,10 @@ function stripHtml(html: string) {
 function getCardImg(d: Disease) {
   if (!d.coverImage) return null
   const raw = typeof d.coverImage === 'string' ? d.coverImage : d.coverImage.url ?? ''
-  return cloudinaryResize(raw, 480, 280, 'fill')
+  // Admin dashboard crops every disease cover to exactly 800×500 (8:5), and the
+  // artwork carries the disease name burned in — match that ratio or the crop
+  // eats the title.
+  return cloudinaryResize(raw, 800, 500, 'fill')
 }
 
 // ── Category map ─────────────────────────────────────────────────────
@@ -64,44 +67,32 @@ function DiseaseCard({ disease }: { disease: Disease }) {
       className="group bg-white rounded-2xl border border-border overflow-hidden
         hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200 flex flex-col"
     >
-      {/* Card image or icon */}
+      {/* Card image or icon — badges live in the body below, because the cover
+          artwork has the disease name burned in at the top. */}
       {imgUrl ? (
-        <div className="relative h-44 overflow-hidden bg-bg shrink-0">
+        <div className="relative aspect-[8/5] overflow-hidden bg-bg shrink-0">
           <Image src={imgUrl} alt={disease.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent" />
-          {/* Category badge on image */}
-          <div className="absolute bottom-3 left-3">
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
-              bg-white/90 ${cfg.color} backdrop-blur-sm`}>
-              <Icon className="w-3 h-3" />
-              {disease.category}
-            </span>
-          </div>
-          {disease.doctorVerified && (
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                bg-green/20 text-green-200 backdrop-blur-sm">
-                <CheckCircle className="w-3 h-3" />
-                Verified
-              </span>
-            </div>
-          )}
         </div>
       ) : (
-        <div className={`h-44 flex items-center justify-center ${cfg.bg} relative shrink-0`}>
+        <div className={`aspect-[8/5] flex items-center justify-center ${cfg.bg} relative shrink-0`}>
           <Icon className={`w-16 h-16 ${cfg.color} opacity-20`} />
-          <div className="absolute bottom-3 left-3">
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.badge}`}>
-              <Icon className="w-3 h-3" />
-              {disease.category}
-            </span>
-          </div>
         </div>
       )}
 
       {/* Card body */}
       <div className="p-5 flex flex-col flex-1">
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.badge}`}>
+            <Icon className="w-3 h-3" />
+            {disease.category}
+          </span>
+          {disease.doctorVerified && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green/12 text-green">
+              <CheckCircle className="w-3 h-3" />
+              Verified
+            </span>
+          )}
+        </div>
         <h3 className="font-bold text-navy text-base leading-snug mb-1.5 group-hover:text-primary transition-colors line-clamp-2">
           {disease.title}
         </h3>

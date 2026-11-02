@@ -7,7 +7,8 @@
  * fills like a vital-signs monitor. A circular "radial progress" ring
  * around the percentage gives an at-a-glance read of how close the goal is.
  *
- * Animation layers (all triggered by IntersectionObserver):
+ * Animation layers (all driven by the replaying useScrollReveal trigger, so
+ * they re-fire every time the section is scrolled past, in either direction):
  *  1. Section header fades + slides in
  *  2. Cards stagger in with spring scale from translateY
  *  3. ECG polyline draws itself via stroke-dashoffset on each card
@@ -19,7 +20,7 @@
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Heart, Shield, ArrowRight, TrendingUp,
@@ -27,23 +28,19 @@ import {
 } from 'lucide-react'
 import type { Campaign } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props { campaigns: Campaign[] }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function useVisible(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [v, setV] = useState(false)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible: v }
+/**
+ * Replaying scroll trigger. `eagerness` is how far into the viewport the element
+ * must travel before it fires, as a fraction of viewport height.
+ */
+function useVisible(eagerness = 0.1) {
+  return useScrollReveal<HTMLDivElement>({ offset: eagerness })
 }
 
 function useCounter(target: number, duration = 1400, active = false) {
@@ -214,11 +211,12 @@ function CampaignCard({
         <ECGLine active={active} color={ecgColor} />
       </div>
 
-      {/* ── Patient photo ── */}
-      <div className="relative h-40 overflow-hidden mx-4 rounded-2xl">
+      {/* ── Patient photo — free-form upload, so keep a photo-like ratio
+          instead of a fixed height that crops the frame. ── */}
+      <div className="relative aspect-[4/3] overflow-hidden mx-4 rounded-2xl">
         {photo ? (
           <LazyImage
-            src={photo}
+            src={cld.cover(photo)}
             alt={`${firstName}'s campaign`}
             revealBlur revealScale
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -386,7 +384,8 @@ function TrustBadge({ icon: Icon, label, note, delay, visible }: {
 
 // ── Main section ──────────────────────────────────────────────────────────────
 export default function CampaignHighlight({ campaigns }: Props) {
-  const { ref, visible } = useVisible(0.06)
+  // Signature effect: the header wipes up like a curtain, cards spring in behind it.
+  const { ref, visible, direction } = useVisible(0.06)
 
   if (!campaigns.length) return null
 
@@ -397,13 +396,11 @@ export default function CampaignHighlight({ campaigns }: Props) {
       <div ref={ref} className="container-max px-4 md:px-8">
 
         {/* ── Header ── */}
-        <div
+        <Reveal
+          effect="curtain-up"
+          visible={visible}
+          direction={direction}
           className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-12"
-          style={{
-            opacity:   visible ? 1 : 0,
-            transform: visible ? 'none' : 'translateY(-20px)',
-            transition: 'opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1)',
-          }}
         >
           <div className="max-w-xl">
             {/* Eyebrow */}
@@ -440,7 +437,7 @@ export default function CampaignHighlight({ campaigns }: Props) {
               <ArrowRight size={14} />
             </Link>
           </div>
-        </div>
+        </Reveal>
 
         {/* ── Campaign cards ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

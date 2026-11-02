@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Images, Play, ArrowRight, X,
@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import type { GalleryItem } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import useScrollReveal, { type ScrollDirection } from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 // ── Category label map ──────────────────────────────────────────────────────
 const CAT_LABELS: Record<string, string> = {
@@ -244,93 +246,112 @@ function Lightbox({ items, index, onClose, onGoto }: LightboxProps) {
 // or a branded play card for Cloudinary videos.
 
 interface CardProps {
-  item:    GalleryItem
-  onClick: () => void
+  item:      GalleryItem
+  index:     number
+  visible:   boolean
+  direction: ScrollDirection
+  onClick:   () => void
 }
 
-function GalleryCard({ item, onClick }: CardProps) {
+function GalleryCard({ item, index, visible, direction, onClick }: CardProps) {
   const ytId = item.type === 'video' ? getYouTubeId(item.url) : null
 
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl cursor-pointer bg-[#143B7D]/10 w-full break-inside-avoid mb-3"
-      onClick={onClick}
+    <Reveal
+      effect="rotate-in"
+      delay={index * 70}
+      visible={visible}
+      direction={direction}
+      className="w-full break-inside-avoid mb-3"
     >
-      {/* ── Media ── */}
-      {item.type === 'photo' ? (
-        /* Natural-dimension image — img renders at its intrinsic height */
-        <div className="relative w-full overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.url}
-            alt={item.caption}
-            className="w-full h-auto block group-hover:scale-[1.03] transition-transform duration-500"
-            loading="lazy"
-          />
+      <div
+        className="group relative overflow-hidden rounded-2xl cursor-pointer bg-[#143B7D]/10 w-full"
+        onClick={onClick}
+      >
+        {/* ── Media ── */}
+        {item.type === 'photo' ? (
+          /* Natural-dimension image — img renders at its intrinsic height */
+          <div className="relative w-full overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.url}
+              alt={item.caption}
+              className="w-full h-auto block group-hover:scale-[1.03] transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+        ) : ytId ? (
+          /* YouTube video — show HQ thumbnail with play overlay.
+             hqdefault is 4:3, which object-cover slices inside this 16:9 box;
+             maxresdefault / mqdefault are the true 16:9 variants. */
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
+              alt={item.caption}
+              onError={(e) => {
+                const el = e.currentTarget
+                if (el.src.includes('maxresdefault')) {
+                  el.src = `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`
+                }
+              }}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+              loading="lazy"
+            />
+            {/* Dark vignette so play button pops */}
+            <div className="absolute inset-0 bg-black/25" />
+            {/* YouTube-red play button */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-[#FF0000] flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                <Play size={22} className="fill-white text-white ml-1" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Cloudinary / direct video — branded play card, 16:9 */
+          <div
+            className="relative w-full flex items-center justify-center bg-gradient-to-br from-[#143B7D] to-[#1565D8]"
+            style={{ aspectRatio: '16/9' }}
+          >
+            <div className="w-14 h-14 rounded-full bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <Play size={24} className="fill-white text-white ml-1" />
+            </div>
+          </div>
+        )}
+
+        {/* Gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+        {/* Video badge */}
+        {item.type === 'video' && (
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <Play size={8} className="fill-white" /> Video
+          </div>
+        )}
+
+        {/* Category badge (hover) */}
+        <div className="absolute top-2.5 right-2.5 bg-black/40 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          {CAT_LABELS[item.category] ?? item.category}
         </div>
-      ) : ytId ? (
-        /* YouTube video — show HQ thumbnail with play overlay */
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16/9' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
-            alt={item.caption}
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-            loading="lazy"
-          />
-          {/* Dark vignette so play button pops */}
-          <div className="absolute inset-0 bg-black/25" />
-          {/* YouTube-red play button */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full bg-[#FF0000] flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
-              <Play size={22} className="fill-white text-white ml-1" />
+
+        {/* Caption + action icon (hover) */}
+        <div className="absolute inset-0 flex items-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="flex items-end justify-between w-full gap-2">
+            {item.caption && (
+              <p className="text-white text-xs font-medium leading-snug line-clamp-2 flex-1">
+                {item.caption}
+              </p>
+            )}
+            <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+              {item.type === 'video'
+                ? <Play   size={11} className="fill-white text-white" />
+                : <ZoomIn size={11} className="text-white" />
+              }
             </div>
           </div>
         </div>
-      ) : (
-        /* Cloudinary / direct video — branded play card, 16:9 */
-        <div
-          className="relative w-full flex items-center justify-center bg-gradient-to-br from-[#143B7D] to-[#1565D8]"
-          style={{ aspectRatio: '16/9' }}
-        >
-          <div className="w-14 h-14 rounded-full bg-white/15 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Play size={24} className="fill-white text-white ml-1" />
-          </div>
-        </div>
-      )}
-
-      {/* Gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-      {/* Video badge */}
-      {item.type === 'video' && (
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/55 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-          <Play size={8} className="fill-white" /> Video
-        </div>
-      )}
-
-      {/* Category badge (hover) */}
-      <div className="absolute top-2.5 right-2.5 bg-black/40 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        {CAT_LABELS[item.category] ?? item.category}
       </div>
-
-      {/* Caption + action icon (hover) */}
-      <div className="absolute inset-0 flex items-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-        <div className="flex items-end justify-between w-full gap-2">
-          {item.caption && (
-            <p className="text-white text-xs font-medium leading-snug line-clamp-2 flex-1">
-              {item.caption}
-            </p>
-          )}
-          <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-            {item.type === 'video'
-              ? <Play   size={11} className="fill-white text-white" />
-              : <ZoomIn size={11} className="text-white" />
-            }
-          </div>
-        </div>
-      </div>
-    </div>
+    </Reveal>
   )
 }
 
@@ -360,34 +381,26 @@ export default function GallerySection({ items }: Props) {
   const totalItems = items.length
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const sectionRef = useRef<HTMLElement>(null)
-  const [visible,  setVisible]  = useState(false)
 
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold: 0.08 }
-    )
-    if (sectionRef.current) obs.observe(sectionRef.current)
-    return () => obs.disconnect()
-  }, [])
+  // Signature effect: the header wipes open from the left edge, then the photos
+  // tumble in one by one — like prints being laid out on a table. Replays on
+  // every pass and flips its entry side when you scroll back up.
+  const { ref: sectionRef, visible, direction } = useScrollReveal<HTMLElement>({ offset: 0.08 })
 
   return (
     <>
       <section
         ref={sectionRef}
-        className="py-16 md:py-24 bg-[#F8FAFC] overflow-hidden"
+        className="py-10 md:py-12 bg-[#F8FAFC] overflow-hidden"
       >
         <div className="container-max px-4 md:px-8">
 
           {/* ── Section header ── */}
-          <div
-            className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-10"
-            style={{
-              opacity:    visible ? 1 : 0,
-              transform:  visible ? 'none' : 'translateY(24px)',
-              transition: 'opacity 0.6s ease, transform 0.6s ease',
-            }}
+          <Reveal
+            effect="wipe-right"
+            visible={visible}
+            direction={direction}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-7"
           >
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1565D8]/8 border border-[#1565D8]/15 text-[#1565D8] text-[11px] font-bold uppercase tracking-widest mb-4">
@@ -414,24 +427,20 @@ export default function GallerySection({ items }: Props) {
             >
               View Gallery <ArrowRight size={15} />
             </Link>
-          </div>
+          </Reveal>
 
           {/* ── Masonry grid ── */}
           {!isLive ? (
             <SkeletonGrid />
           ) : (
-            <div
-              className="columns-2 md:columns-3 gap-3"
-              style={{
-                opacity:    visible ? 1 : 0,
-                transform:  visible ? 'none' : 'translateY(32px)',
-                transition: 'opacity 0.7s ease 0.1s, transform 0.7s ease 0.1s',
-              }}
-            >
+            <div className="columns-2 md:columns-3 gap-3">
               {display.map((item, i) => (
                 <GalleryCard
                   key={item.id}
                   item={item}
+                  index={i}
+                  visible={visible}
+                  direction={direction}
                   onClick={() => setLightboxIndex(i)}
                 />
               ))}
@@ -440,12 +449,12 @@ export default function GallerySection({ items }: Props) {
 
           {/* ── Bottom CTA strip ── */}
           {isLive && (
-            <div
+            <Reveal
+              effect="fade-up"
+              delay={560}
+              visible={visible}
+              direction={direction}
               className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-white border border-[#DCE3EC] shadow-sm"
-              style={{
-                opacity:    visible ? 1 : 0,
-                transition: 'opacity 0.7s ease 0.35s',
-              }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#1565D8]/10 flex items-center justify-center">
@@ -464,7 +473,7 @@ export default function GallerySection({ items }: Props) {
               >
                 View All Gallery <ArrowRight size={15} />
               </Link>
-            </div>
+            </Reveal>
           )}
         </div>
       </section>

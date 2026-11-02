@@ -22,7 +22,8 @@
  *     cardiology") surface as visible content on the home page itself.
  *   - Show/hide toggle lives in the admin Settings page (cardiologyTypes).
  *
- * Animation layers (IntersectionObserver + CSS, matching MythsSection):
+ * Animation layers (useScrollReveal + CSS, matching MythsSection — they replay
+ * on every pass, in both directions):
  *  1. Eyebrow pulse, title scales-in, ECG trace draws left→right
  *  2. Subtitle fades up
  *  3. Six cards stagger up + in
@@ -32,7 +33,6 @@
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   HeartPulse,         // general / paediatric
@@ -45,6 +45,8 @@ import {
   ArrowRight,
   Calendar,
 } from 'lucide-react'
+import useScrollReveal, { type ScrollDirection } from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 /* ── Content (editable copy — change here, no props needed) ──────────────── */
 interface TypeDef {
@@ -131,19 +133,12 @@ const TYPES: TypeDef[] = [
 ]
 
 /* ── Scroll-reveal hook (same vocabulary as MythsSection) ─────────────── */
-function useVisible(threshold = 0.08) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [v, setV] = useState(false)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible: v }
+/**
+ * Replaying scroll trigger. `eagerness` is how far into the viewport the element
+ * must travel before it fires, as a fraction of viewport height.
+ */
+function useVisible(eagerness = 0.08) {
+  return useScrollReveal<HTMLElement>({ offset: eagerness })
 }
 
 /* ── Reusable animated ECG pull-quote (used in header) ─────────────── */
@@ -453,19 +448,21 @@ function Hero({ keyName, active, color }: { keyName: TypeDef['heroKey']; active:
 }
 
 /* ── Card ─────────────────────────────────────────────────────────── */
-function TypeCard({ t, index, active }: { t: TypeDef; index: number; active: boolean }) {
+function TypeCard({ t, index, active, direction }: {
+  t: TypeDef; index: number; active: boolean; direction: ScrollDirection
+}) {
   const Icon = t.icon
   const delay = 120 + index * 110
   const glow  = t.accent.glow
 
   return (
-    <article
+    <Reveal
+      as="article"
+      effect="tilt-settle"
+      delay={delay}
+      visible={active}
+      direction={direction}
       className="group relative h-full"
-      style={{
-        opacity: active ? 1 : 0,
-        transform: active ? 'translateY(0)' : 'translateY(40px)',
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform 0.7s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms`,
-      }}
     >
       <div
         className={`ct-card-${t.id} relative h-full rounded-2xl border border-border bg-white overflow-hidden
@@ -581,7 +578,7 @@ function TypeCard({ t, index, active }: { t: TypeDef; index: number; active: boo
          </div>
        </div>
      </div>
-   </article>
+   </Reveal>
   )
 }
 
@@ -646,10 +643,11 @@ function TalkStrip({ active }: { active: boolean }) {
 
 /* ── Main section ───────────────────────────────────────────────── */
 export default function CardiologyTypesSection() {
-  const { ref, visible } = useVisible(0.05)
+  // Signature effect: cards settle out of a 3D tilt, header eases down to size.
+  const { ref, visible, direction } = useVisible(0.05)
 
   return (
-    <section ref={ref} className="py-16 md:py-24 bg-bg relative overflow-hidden">
+    <section ref={ref} className="py-10 md:py-12 bg-bg relative overflow-hidden">
       {/* ── Background decorations ── */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[640px] h-[640px] rounded-full bg-primary/5 blur-[110px]" />
@@ -667,13 +665,11 @@ export default function CardiologyTypesSection() {
 
       <div className="container-max px-4 md:px-8 relative z-10">
         {/* ── Header ── */}
-        <div
-          className="text-center max-w-3xl mx-auto mb-10 md:mb-12"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'scale(1)' : 'scale(0.96)',
-            transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
-          }}
+        <Reveal
+          effect="zoom-out"
+          visible={visible}
+          direction={direction}
+          className="text-center max-w-3xl mx-auto mb-7 md:mb-8"
         >
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
@@ -702,17 +698,17 @@ export default function CardiologyTypesSection() {
             Heart medicine is a deep field. Each branch trains for a different problem — here is
             every specialty you might meet, in plain language.
          </p>
-       </div>
+       </Reveal>
 
         {/* ── Card grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {TYPES.map((t, i) => (
-            <TypeCard key={t.id} t={t} index={i} active={visible} />
+            <TypeCard key={t.id} t={t} index={i} active={visible} direction={direction} />
           ))}
        </div>
 
         {/* ── Talk-to-cardio CTA ── */}
-        <div className="mt-12 md:mt-14">
+        <div className="mt-8 md:mt-9">
           <TalkStrip active={visible} />
        </div>
      </div>

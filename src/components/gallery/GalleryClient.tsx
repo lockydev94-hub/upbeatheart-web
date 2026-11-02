@@ -21,15 +21,17 @@ const CATEGORIES = [
   { value: 'events',      label: 'Events',      icon: '🎉' },
 ] as const
 
-// Aspect ratio pattern for masonry feel — cycles every 6 items
-// All 4:3 to match the enforced crop, but alternating tall/wide for visual interest
+// Every tile is 4:3 because the admin dashboard crops gallery photos to
+// 800×600 (4:3) and promises "Gallery photos must be 4:3 landscape so they
+// display correctly in the website grid". A 3/2 slot here sliced 11% off the
+// top and bottom of those photos.
 const ASPECTS = [
-  'aspect-[4/3]',    // standard landscape
-  'aspect-[4/3]',    // standard landscape
-  'aspect-[3/2]',    // slightly wider
-  'aspect-[4/3]',    // standard landscape
-  'aspect-[3/2]',    // slightly wider
-  'aspect-[4/3]',    // standard landscape
+  'aspect-[4/3]',
+  'aspect-[4/3]',
+  'aspect-[4/3]',
+  'aspect-[4/3]',
+  'aspect-[4/3]',
+  'aspect-[4/3]',
 ]
 
 // ── YouTube helper ────────────────────────────────────────────────────────────

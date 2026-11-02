@@ -20,6 +20,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Play, Volume2, VolumeX } from 'lucide-react'
 import type { SiteSettings } from '@/types/firestore'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props {
   settings: Pick<SiteSettings,
@@ -230,19 +232,9 @@ function CloudinaryPlayer({ src, title }: { src: string; title: string }) {
 
 // ---- Main section -----------------------------------------------------------
 export default function VideoSection({ settings }: Props) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold: 0.08 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  // Signature effect: the copy slides in from the left while the player
+  // un-masks from its centre, like a screen powering on. Replays every pass.
+  const { ref: sectionRef, visible, direction } = useScrollReveal<HTMLElement>({ offset: 0.08 })
 
   const {
     educationVideoUrl:   videoUrl   = '',
@@ -259,8 +251,8 @@ export default function VideoSection({ settings }: Props) {
 
   return (
     <section
-      ref={sectionRef as React.RefObject<HTMLElement>}
-      className="relative py-16 md:py-24 overflow-hidden"
+      ref={sectionRef}
+      className="relative py-10 md:py-12 overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #143B7D 0%, #1565D8 60%, #18B55A 100%)' }}
     >
       <div className="absolute inset-0 pointer-events-none opacity-[0.04]" aria-hidden>
@@ -277,16 +269,14 @@ export default function VideoSection({ settings }: Props) {
       <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-green/10 blur-3xl pointer-events-none" aria-hidden />
 
       <div className="container-max px-4 md:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
 
           {/* Left: text */}
-          <div
+          <Reveal
+            effect="slide-left"
+            visible={visible}
+            direction={direction}
             className="space-y-5 text-white"
-            style={{
-              opacity:    visible ? 1 : 0,
-              transform:  visible ? 'none' : 'translateX(-40px)',
-              transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
-            }}
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[11px] font-bold uppercase tracking-widest">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse" />
@@ -315,16 +305,15 @@ export default function VideoSection({ settings }: Props) {
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
 
           {/* Right: video player */}
-          <div
+          <Reveal
+            effect="mask-zoom"
+            delay={150}
+            visible={visible}
+            direction={direction}
             className="relative"
-            style={{
-              opacity:    visible ? 1 : 0,
-              transform:  visible ? 'none' : 'translateX(40px) scale(0.96)',
-              transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1) 0.15s, transform 0.7s cubic-bezier(0.22,1,0.36,1) 0.15s',
-            }}
           >
             <div className="relative rounded-3xl overflow-hidden shadow-[0_16px_64px_rgba(0,0,0,0.35)] border border-white/10">
               {hasVideo ? (
@@ -346,7 +335,7 @@ export default function VideoSection({ settings }: Props) {
               <div className="w-2 h-2 rounded-full bg-green animate-pulse" />
               <span className="text-[12px] font-bold text-navy">Doctor-Curated Content</span>
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

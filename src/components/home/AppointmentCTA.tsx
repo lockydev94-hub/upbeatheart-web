@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   CalendarCheck, Phone, Clock, MessageCircle,
   ArrowRight, CheckCircle, Heart, Stethoscope, ShieldCheck,
 } from 'lucide-react'
 import type { SiteSettings, ClinicHour } from '@/types/firestore'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props { settings: SiteSettings }
 
@@ -25,7 +27,7 @@ function ECGPulseLine() {
       viewBox="0 0 400 60"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="w-full max-w-md mx-auto"
+      className="mx-auto block h-10 w-auto"
       aria-hidden
     >
       <style>{`
@@ -63,7 +65,7 @@ function HoursTable({ hours }: { hours: ClinicHour[] }) {
         return (
           <div
             key={h.day}
-            className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl text-center transition-all duration-300 ${
+            className={`flex flex-col items-center gap-0.5 px-1.5 py-2 rounded-lg text-center transition-all duration-300 ${
               isToday
                 ? 'bg-primary text-white shadow-[0_4px_16px_rgba(21,101,216,0.30)]'
                 : h.closed
@@ -111,7 +113,7 @@ function TrustCard({
 
   return (
     <div
-      className="flex items-center gap-2.5 bg-white border border-[#DCE3EC] rounded-xl px-4 py-3 shadow-[0_2px_12px_rgba(21,101,216,0.07)]"
+      className="flex items-center gap-2 bg-white border border-[#DCE3EC] rounded-lg px-3 py-2 shadow-[0_2px_12px_rgba(21,101,216,0.07)]"
       style={{
         opacity: show ? 1 : 0,
         transform: show ? 'none' : 'translateY(12px)',
@@ -125,25 +127,10 @@ function TrustCard({
 }
 
 export default function AppointmentCTA({ settings }: Props) {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [visible, setVisible] = useState(false)
+  // Signature effect: the whole block fades up out of shadow and colour —
+  // a spotlight coming on. Replays on every pass, both directions.
+  const { ref: sectionRef, visible, direction } = useScrollReveal<HTMLElement>({ offset: 0.08 })
   const [beatAnim, setBeatAnim] = useState(false)
-
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.08 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
 
   const triggerBeat = () => {
     setBeatAnim(true)
@@ -155,18 +142,10 @@ export default function AppointmentCTA({ settings }: Props) {
     ? 'https://wa.me/' + settings.whatsapp.replace(/\D/g, '') + '?text=Hi,%20I%20would%20like%20to%20book%20an%20appointment'
     : null
 
-  const fadeUp = (delay = 0) => ({
-    opacity: visible ? 1 : 0,
-    transform: visible ? 'none' : 'translateY(32px)',
-    transition:
-      'opacity 0.7s cubic-bezier(0.22,1,0.36,1) ' + delay + 'ms, ' +
-      'transform 0.7s cubic-bezier(0.22,1,0.36,1) ' + delay + 'ms',
-  })
-
   return (
     <section
-      ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-20 md:py-28 bg-white relative overflow-hidden"
+      ref={sectionRef}
+      className="pt-8 pb-10 md:pt-10 md:pb-12 bg-white relative overflow-hidden"
     >
       {/* Dot-grid background */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
@@ -202,16 +181,27 @@ export default function AppointmentCTA({ settings }: Props) {
       <div className="container-max px-4 md:px-8 relative z-10">
 
         {/* Label pill */}
-        <div className="flex justify-center mb-8" style={fadeUp(0)}>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/8 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest">
+        <Reveal
+          effect="spotlight"
+          visible={visible}
+          direction={direction}
+          className="flex justify-center mb-4"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/8 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest">
             <CalendarCheck size={12} />
             Book an Appointment
           </div>
-        </div>
+        </Reveal>
 
         {/* Headline */}
-        <div className="text-center mb-4" style={fadeUp(80)}>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-[#143B7D] leading-tight tracking-tight">
+        <Reveal
+          effect="spotlight"
+          delay={80}
+          visible={visible}
+          direction={direction}
+          className="text-center mb-3"
+        >
+          <h2 className="text-3xl md:text-[2.6rem] font-extrabold text-[#143B7D] leading-tight tracking-tight">
             Your Heart Deserves
             <span
               className="relative inline-block ml-3 cursor-pointer select-none"
@@ -231,32 +221,47 @@ export default function AppointmentCTA({ settings }: Props) {
               </span>
             </span>
           </h2>
-        </div>
+        </Reveal>
 
         {/* ECG line */}
-        <div className="mb-6" style={fadeUp(140)}>
+        <Reveal
+          effect="spotlight"
+          delay={140}
+          visible={visible}
+          direction={direction}
+          className="mb-4"
+        >
           {visible && <ECGPulseLine />}
-        </div>
+        </Reveal>
 
         {/* Subtitle */}
-        <div className="text-center mb-10" style={fadeUp(180)}>
-          <p className="text-[#6B7280] text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+        <Reveal
+          effect="spotlight"
+          delay={180}
+          visible={visible}
+          direction={direction}
+          className="text-center mb-6"
+        >
+          <p className="text-[#6B7280] text-sm md:text-[15px] max-w-xl mx-auto leading-relaxed">
             {isOpen
               ? "Book your consultation in minutes  -- no registration required. We'll confirm your slot within 2 hours."
               : (settings.appointmentNote || 'Online booking is temporarily unavailable. Please call us directly.')}
           </p>
-        </div>
+        </Reveal>
 
         {/* CTA buttons */}
-        <div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
-          style={fadeUp(240)}
+        <Reveal
+          effect="fade-up"
+          delay={240}
+          visible={visible}
+          direction={direction}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-8"
         >
           {isOpen ? (
             <>
               <Link
                 href="/appointment"
-                className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-primary text-white hover:bg-primary/90 shadow-[0_6px_28px_rgba(21,101,216,0.30)] hover:shadow-[0_10px_36px_rgba(21,101,216,0.42)] transition-all duration-200 hover:-translate-y-0.5"
+                className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-[15px] bg-primary text-white hover:bg-primary/90 shadow-[0_6px_28px_rgba(21,101,216,0.30)] hover:shadow-[0_10px_36px_rgba(21,101,216,0.42)] transition-all duration-200 hover:-translate-y-0.5"
               >
                 <CalendarCheck size={18} />
                 Book Appointment Online
@@ -267,7 +272,7 @@ export default function AppointmentCTA({ settings }: Props) {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-white text-[#1F2937] border border-[#DCE3EC] hover:border-primary/30 hover:bg-[#F8FAFC] shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(21,101,216,0.12)] transition-all duration-200 hover:-translate-y-0.5"
+                  className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-[15px] bg-white text-[#1F2937] border border-[#DCE3EC] hover:border-primary/30 hover:bg-[#F8FAFC] shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(21,101,216,0.12)] transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <MessageCircle size={18} className="text-[#18B55A]" />
                   WhatsApp Us
@@ -277,18 +282,21 @@ export default function AppointmentCTA({ settings }: Props) {
           ) : (
             <a
               href={'tel:' + settings.phone}
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-primary text-white hover:bg-primary/90 shadow-[0_6px_28px_rgba(21,101,216,0.28)] transition-all duration-200 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl font-bold text-[15px] bg-primary text-white hover:bg-primary/90 shadow-[0_6px_28px_rgba(21,101,216,0.28)] transition-all duration-200 hover:-translate-y-0.5"
             >
               <Phone size={18} />
               {'Call ' + (settings.phone || 'Us Now')}
             </a>
           )}
-        </div>
+        </Reveal>
 
         {/* Trust badges */}
-        <div
-          className="flex flex-wrap items-center justify-center gap-3 mb-14"
-          style={fadeUp(300)}
+        <Reveal
+          effect="fade-up"
+          delay={300}
+          visible={visible}
+          direction={direction}
+          className="flex flex-wrap items-center justify-center gap-2.5 mb-9"
         >
           {visible && (
             <>
@@ -298,24 +306,36 @@ export default function AppointmentCTA({ settings }: Props) {
               <TrustCard icon={<Stethoscope  size={14} />} label="Secure and private"       delay={590} />
             </>
           )}
-        </div>
+        </Reveal>
 
         {/* Clinic hours */}
         {settings.clinicHours?.length > 0 && (
-          <div className="max-w-2xl mx-auto" style={fadeUp(360)}>
-            <div className="flex items-center justify-center gap-2 mb-4">
+          <Reveal
+            effect="fade-up"
+            delay={360}
+            visible={visible}
+            direction={direction}
+            className="max-w-2xl mx-auto"
+          >
+            <div className="flex items-center justify-center gap-2 mb-2.5">
               <Clock size={13} className="text-[#6B7280]" />
               <p className="text-[11px] font-bold uppercase tracking-widest text-[#6B7280]">
                 Clinic Hours
               </p>
             </div>
             {visible && <HoursTable hours={settings.clinicHours} />}
-          </div>
+          </Reveal>
         )}
 
         {/* Emergency note */}
         {settings.phone && (
-          <div className="flex items-center justify-center gap-2 mt-10" style={fadeUp(420)}>
+          <Reveal
+            effect="fade-up"
+            delay={420}
+            visible={visible}
+            direction={direction}
+            className="flex items-center justify-center gap-2 mt-7"
+          >
             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
             <p className="text-[12px] text-[#6B7280]">
               Cardiac emergency?{' '}
@@ -326,7 +346,7 @@ export default function AppointmentCTA({ settings }: Props) {
                 {'Call ' + settings.phone + ' immediately'}
               </a>
             </p>
-          </div>
+          </Reveal>
         )}
       </div>
     </section>

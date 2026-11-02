@@ -31,6 +31,7 @@ import {
   TIME_SLOTS,
 } from '@/lib/firestore/appointments'
 import type { SiteSettings } from '@/types/firestore'
+import { cld } from '@/lib/cloudinary'
 import type { DoctorOption } from './page'
 import {
   Calendar, Clock, Phone, User, Mail, ChevronRight,
@@ -357,7 +358,7 @@ export default function AppointmentClient({ settings, doctors }: Props) {
           {settings.doctorName && (
             <div className="inline-flex items-center gap-3 mt-7 bg-white/10 border border-white/20 rounded-2xl px-5 py-3 backdrop-blur-sm">
               {settings.doctorPhotoUrl ? (
-                <Image src={settings.doctorPhotoUrl} alt={settings.doctorName || 'Doctor'}
+                <Image src={cld.avatarSm(settings.doctorPhotoUrl)} alt={settings.doctorName || 'Doctor'}
                   width={40} height={40}
                   className="w-10 h-10 rounded-full object-cover border-2 border-white/40" />
               ) : (
@@ -689,7 +690,7 @@ export default function AppointmentClient({ settings, doctors }: Props) {
                               ? 'border-primary bg-primary/5'
                               : 'border-gray-200 hover:border-gray-300'}`}>
                           {doc.photoURL ? (
-                            <Image src={doc.photoURL} alt={doc.name || 'Doctor'}
+                            <Image src={cld.avatarSm(doc.photoURL)} alt={doc.name || 'Doctor'}
                               width={40} height={40}
                               className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
                           ) : (

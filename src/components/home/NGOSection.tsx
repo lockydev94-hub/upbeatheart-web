@@ -23,23 +23,18 @@ import {
 } from 'lucide-react'
 import type { NGO } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import useScrollReveal, { type ScrollDirection } from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 interface Props { ngos: NGO[] }
 
 // ── Intersection hook ─────────────────────────────────────────────────────────
-function useVisible(threshold = 0.07) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible }
+/**
+ * Replaying scroll trigger. `eagerness` is how far into the viewport the element
+ * must travel before it fires, as a fraction of viewport height.
+ */
+function useVisible(eagerness = 0.07) {
+  return useScrollReveal<HTMLDivElement>({ offset: eagerness })
 }
 
 // ── Counter hook ──────────────────────────────────────────────────────────────
@@ -88,43 +83,42 @@ function StatBadge({ target, suffix, label, icon: Icon, color, active, delay }: 
 }
 
 // ── NGO Card ──────────────────────────────────────────────────────────────────
-function NGOCard({ ngo, delay, visible }: { ngo: NGO; delay: number; visible: boolean }) {
+function NGOCard({ ngo, delay, visible, direction }: {
+  ngo: NGO; delay: number; visible: boolean; direction: ScrollDirection
+}) {
   return (
-    <Link
-      href="/ngo"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-        transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms`,
-      }}
-      className="group relative flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-white border border-border hover:border-primary/30 hover:shadow-[0_6px_24px_rgba(21,101,216,0.12)] transition-all duration-300 hover:-translate-y-1"
-    >
-      <span className="absolute top-2 right-2">
-        <CheckCircle2 size={12} className="text-green" />
-      </span>
-      {ngo.logoUrl ? (
-        <div className="relative h-10 w-20 overflow-hidden">
-          <LazyImage
-            src={ngo.logoUrl} alt={ngo.name} revealBlur
-            className="absolute inset-0 w-full h-full object-contain grayscale group-hover:grayscale-0 opacity-55 group-hover:opacity-100 transition-all duration-300"
-          />
-        </div>
-      ) : (
-        <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/12 flex items-center justify-center">
-          <Building2 size={18} className="text-primary/50 group-hover:text-primary transition-colors" />
-        </div>
-      )}
-      <p className="text-[10px] font-bold text-text-secondary group-hover:text-navy transition-colors text-center leading-tight line-clamp-2">
-        {ngo.name}
-      </p>
-      {ngo.description && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-52 bg-navy text-white text-[10px] rounded-xl px-3 py-2 leading-relaxed shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20">
-          <p className="font-bold mb-0.5 text-[11px]">{ngo.name}</p>
-          <p className="text-white/70 line-clamp-3">{ngo.description}</p>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
-        </div>
-      )}
-    </Link>
+    <Reveal effect="zoom-in" delay={delay} visible={visible} direction={direction}>
+      <Link
+        href="/ngo"
+        className="group relative flex flex-col items-center gap-2.5 p-4 h-full rounded-2xl bg-white border border-border hover:border-primary/30 hover:shadow-[0_6px_24px_rgba(21,101,216,0.12)] transition-all duration-300 hover:-translate-y-1"
+      >
+        <span className="absolute top-2 right-2">
+          <CheckCircle2 size={12} className="text-green" />
+        </span>
+        {ngo.logoUrl ? (
+          <div className="relative h-10 w-20 overflow-hidden">
+            <LazyImage
+              src={ngo.logoUrl} alt={ngo.name} revealBlur
+              className="absolute inset-0 w-full h-full object-contain grayscale group-hover:grayscale-0 opacity-55 group-hover:opacity-100 transition-all duration-300"
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-xl bg-primary/8 border border-primary/12 flex items-center justify-center">
+            <Building2 size={18} className="text-primary/50 group-hover:text-primary transition-colors" />
+          </div>
+        )}
+        <p className="text-[10px] font-bold text-text-secondary group-hover:text-navy transition-colors text-center leading-tight line-clamp-2">
+          {ngo.name}
+        </p>
+        {ngo.description && (
+          <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-52 bg-navy text-white text-[10px] rounded-xl px-3 py-2 leading-relaxed shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20">
+            <p className="font-bold mb-0.5 text-[11px]">{ngo.name}</p>
+            <p className="text-white/70 line-clamp-3">{ngo.description}</p>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
+          </div>
+        )}
+      </Link>
+    </Reveal>
   )
 }
 
@@ -363,38 +357,34 @@ function NetworkDiagram({ visible, ngoCount }: { visible: boolean; ngoCount: num
 }
 
 // ── Benefit card ──────────────────────────────────────────────────────────────
-function BenefitCard({ icon: Icon, title, desc, color, accent, delay, visible }: {
+function BenefitCard({ icon: Icon, title, desc, color, accent, delay, visible, direction }: {
   icon: React.ElementType; title: string; desc: string
-  color: string; accent: string; delay: number; visible: boolean
+  color: string; accent: string; delay: number; visible: boolean; direction: ScrollDirection
 }) {
   return (
-    <div
-      className="group flex items-start gap-3.5 p-4 rounded-2xl bg-white border border-border hover:border-primary/25 hover:shadow-[0_4px_20px_rgba(21,101,216,0.10)] hover:-translate-y-0.5 transition-all duration-250"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateX(0)' : 'translateX(-20px)',
-        transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
-      }}
-    >
-      {/* Animated icon container */}
-      <div
-        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200 ${color}`}
-      >
-        <Icon size={15} className="text-white" />
+    <Reveal effect="slide-left" delay={delay} visible={visible} direction={direction}>
+      <div className="group flex items-start gap-3.5 p-4 rounded-2xl bg-white border border-border hover:border-primary/25 hover:shadow-[0_4px_20px_rgba(21,101,216,0.10)] hover:-translate-y-0.5 transition-all duration-250">
+        {/* Animated icon container */}
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200 ${color}`}
+        >
+          <Icon size={15} className="text-white" />
+        </div>
+        <div>
+          <p className="text-[13px] font-extrabold text-navy leading-tight">{title}</p>
+          <p className="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{desc}</p>
+        </div>
+        {/* Right accent line that slides in on hover */}
+        <div className={`ml-auto w-0.5 self-stretch rounded-full ${accent} opacity-0 group-hover:opacity-100 transition-opacity duration-200`} />
       </div>
-      <div>
-        <p className="text-[13px] font-extrabold text-navy leading-tight">{title}</p>
-        <p className="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{desc}</p>
-      </div>
-      {/* Right accent line that slides in on hover */}
-      <div className={`ml-auto w-0.5 self-stretch rounded-full ${accent} opacity-0 group-hover:opacity-100 transition-opacity duration-200`} />
-    </div>
+    </Reveal>
   )
 }
 
 // ── Main section ──────────────────────────────────────────────────────────────
 export default function NGOSection({ ngos }: Props) {
-  const { ref, visible } = useVisible(0.06)
+  // Signature effect: the whole network zooms into focus — header, then logos.
+  const { ref, visible, direction } = useVisible(0.06)
 
   const displayNGOs   = ngos.slice(0, 9)
   const ngoCount      = ngos.length > 0 ? ngos.length : 30
@@ -427,13 +417,11 @@ export default function NGOSection({ ngos }: Props) {
       <div ref={ref} className="container-max px-4 md:px-8">
 
         {/* ── Section header ── */}
-        <div
+        <Reveal
+          effect="zoom-in"
+          visible={visible}
+          direction={direction}
           className="text-center mb-14"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'none' : 'translateY(-20px)',
-            transition: 'opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1)',
-          }}
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
             <span
@@ -451,7 +439,7 @@ export default function NGOSection({ ngos }: Props) {
             fund treatments, and connect patients to specialists — reaching communities
             that would otherwise have no access.
           </p>
-        </div>
+        </Reveal>
 
         {/* ── Three-column layout: benefits | diagram | NGO grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px_1fr] gap-10 xl:gap-12 items-center">
@@ -461,7 +449,7 @@ export default function NGOSection({ ngos }: Props) {
 
             {/* Benefit cards */}
             {benefits.map((b, i) => (
-              <BenefitCard key={b.title} {...b} delay={200 + i * 90} visible={visible} />
+              <BenefitCard key={b.title} {...b} delay={200 + i * 90} visible={visible} direction={direction} />
             ))}
 
             {/* Stat row */}
@@ -566,7 +554,7 @@ export default function NGOSection({ ngos }: Props) {
             ) : (
               <div className="grid grid-cols-3 gap-2.5">
                 {displayNGOs.map((ngo, i) => (
-                  <NGOCard key={ngo.id} ngo={ngo} delay={300 + i * 55} visible={visible} />
+                  <NGOCard key={ngo.id} ngo={ngo} delay={300 + i * 55} visible={visible} direction={direction} />
                 ))}
                 {Array.from({ length: Math.max(0, 9 - displayNGOs.length) }).map((_, i) => (
                   <div

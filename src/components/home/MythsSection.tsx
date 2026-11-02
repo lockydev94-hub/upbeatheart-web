@@ -8,8 +8,8 @@
  * section closes on a dark pulsing "Important Message" banner that
  * visually treats the message like an EKG alarm going off.
  *
- * Animation layers (all triggered by IntersectionObserver):
- *  1. Header fades + slides, ECG decor line draws left → right
+ * Animation layers (all driven by one replaying scroll trigger):
+ *  1. Header blur-rises into focus, ECG decor line draws left → right
  *  2. Myth cards flip up + in, staggered
  *  3. "MYTH" stamp slams + rotates onto each card (spring scale)
  *  4. Floating red pulse rings orbit the Important Message heart
@@ -17,11 +17,12 @@
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   Heart, HeartPulse, Stethoscope, Activity, X, ArrowRight, ShieldAlert,
 } from 'lucide-react'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 // ── Content (editable copy) ───────────────────────────────────────────────────
 const MYTHS = [
@@ -46,22 +47,6 @@ const MYTHS = [
     body: 'Cholesterol problems can quietly begin young — and high cholesterol is only one of many heart-disease risk factors.',
   },
 ]
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function useVisible(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [v, setV] = useState(false)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible: v }
-}
 
 // ── Animated ECG line ──────────────────────────────────────────────────────
 function ECGLine({ active, color = '#18B8E6' }: { active: boolean; color?: string }) {
@@ -265,10 +250,11 @@ function ImportantMessage({ active }: { active: boolean }) {
 
 // ── Main section ───────────────────────────────────────────────────────────
 export default function MythsSection() {
-  const { ref, visible } = useVisible(0.06)
+  // Signature effect: the header blur-rises into focus, then cards spring up.
+  const { ref, visible, direction } = useScrollReveal<HTMLElement>({ offset: 0.08 })
 
   return (
-    <section ref={ref} className="py-16 md:py-24 bg-white relative overflow-hidden">
+    <section ref={ref} className="py-10 md:py-12 bg-white relative overflow-hidden">
       {/* ── Background decorations ── */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
         <div className="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-primary/5 blur-[90px]" />
@@ -285,13 +271,11 @@ export default function MythsSection() {
 
       <div className="container-max px-4 md:px-8 relative z-10">
         {/* ── Header ── */}
-        <div
-          className="text-center max-w-3xl mx-auto mb-12 md:mb-14"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'none' : 'translateY(28px)',
-            transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
-          }}
+        <Reveal
+          effect="blur-rise"
+          visible={visible}
+          direction={direction}
+          className="text-center max-w-3xl mx-auto mb-8 md:mb-9"
         >
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
@@ -317,7 +301,7 @@ export default function MythsSection() {
             Believing a myth can be as dangerous as the disease itself. Here are
             the most common ones — so you can tell fact from fiction.
           </p>
-        </div>
+        </Reveal>
 
         {/* ── Myth cards grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
@@ -327,7 +311,7 @@ export default function MythsSection() {
         </div>
 
         {/* ── Important Message ── */}
-        <div className="mt-12 md:mt-16">
+        <div className="mt-8 md:mt-10">
           <ImportantMessage active={visible} />
         </div>
       </div>

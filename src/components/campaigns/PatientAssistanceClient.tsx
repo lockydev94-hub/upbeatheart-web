@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Heart, Shield, ArrowRight, TrendingUp, Search, X,
@@ -9,54 +9,32 @@ import {
 } from 'lucide-react'
 import type { Campaign } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
-
-// ─── Intersection-observer reveal hook ───────────────────────────────────────
-function useReveal(threshold = 0.15) {
-  const ref  = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible }
-}
+import { cld } from '@/lib/cloudinary'
+import useScrollReveal from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 // ─── Animated progress bar ────────────────────────────────────────────────────
 function ProgressBar({ raised, goal }: { raised: number; goal: number }) {
-  const ref    = useRef<HTMLDivElement>(null)
+  const { ref, visible } = useScrollReveal<HTMLDivElement>({ offset: 0.05 })
   const [pct, setPct] = useState(0)
   const target = Math.min(Math.round((raised / Math.max(goal, 1)) * 100), 100)
 
+  // Fill on every pass: count up whenever the bar comes into view and rewind to
+  // zero once it leaves, so it fills again next time instead of sitting full.
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          // Animate from 0 → target over 1.2s
-          const start  = performance.now()
-          const dur    = 1200
-          const tick   = (now: number) => {
-            const t = Math.min((now - start) / dur, 1)
-            const ease = 1 - Math.pow(1 - t, 3) // ease-out-cubic
-            setPct(Math.round(ease * target))
-            if (t < 1) requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.5 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [target])
+    if (!visible) { setPct(0); return }
+    let frame = 0
+    const start = performance.now()
+    const dur   = 1200
+    const tick  = (now: number) => {
+      const t = Math.min((now - start) / dur, 1)
+      const ease = 1 - Math.pow(1 - t, 3) // ease-out-cubic
+      setPct(Math.round(ease * target))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [visible, target])
 
   return (
     <div ref={ref} className="space-y-1.5">
@@ -80,145 +58,138 @@ function ProgressBar({ raised, goal }: { raised: number; goal: number }) {
 
 // ─── Animated counter ─────────────────────────────────────────────────────────
 function AnimCounter({ to, prefix = '', suffix = '' }: { to: number; prefix?: string; suffix?: string }) {
-  const ref    = useRef<HTMLSpanElement>(null)
+  const { ref, visible } = useScrollReveal<HTMLSpanElement>({ offset: 0.05 })
   const [val, setVal] = useState(0)
+
+  // Same replay contract as the progress bar — counts up on entry, resets on
+  // exit, so the number is never stuck at its final value on a second pass.
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          const start = performance.now()
-          const dur   = 1400
-          const tick  = (now: number) => {
-            const t    = Math.min((now - start) / dur, 1)
-            const ease = 1 - Math.pow(1 - t, 3)
-            setVal(Math.round(ease * to))
-            if (t < 1) requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.5 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [to])
+    if (!visible) { setVal(0); return }
+    let frame = 0
+    const start = performance.now()
+    const dur   = 1400
+    const tick  = (now: number) => {
+      const t = Math.min((now - start) / dur, 1)
+      const ease = 1 - Math.pow(1 - t, 3)
+      setVal(Math.round(ease * to))
+      if (t < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [visible, to])
+
   return <span ref={ref}>{prefix}{val.toLocaleString('en-IN')}{suffix}</span>
 }
 
 // ─── Campaign card ─────────────────────────────────────────────────────────────
 function CampaignCard({ campaign, index }: { campaign: Campaign; index: number }) {
-  const { ref, visible } = useReveal(0.1)
   const photo      = campaign.photos?.[0] ?? ''
   const firstName  = campaign.patientName?.split(' ')[0] ?? 'Patient'
   const pct        = Math.min(Math.round(((campaign.amountRaised ?? 0) / Math.max(campaign.estimatedCost ?? 1, 1)) * 100), 100)
   const isComplete = pct >= 100
 
   return (
-    <div
-      ref={ref}
-      className="group relative flex flex-col bg-white rounded-2xl border border-border overflow-hidden shadow-sm
-        hover:shadow-[0_12px_48px_rgba(21,101,216,0.14)] hover:border-primary/25 transition-all duration-500"
-      style={{
-        opacity:   visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(32px)',
-        transition: `opacity 0.55s ease ${index * 0.08}s, transform 0.55s ease ${index * 0.08}s, box-shadow 0.3s, border-color 0.3s`,
-      }}
-    >
-      {/* Top gradient line on hover */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    // The reveal lives on a wrapper so the card keeps its own class-based hover
+    // transition — an inline reveal transition would swallow it.
+    <Reveal effect="fade-up" delay={index * 80} offset={0.1} className="h-full">
+      <div
+        className="group relative flex flex-col h-full bg-white rounded-2xl border border-border overflow-hidden shadow-sm
+          hover:shadow-[0_12px_48px_rgba(21,101,216,0.14)] hover:border-primary/25 transition-all duration-500"
+      >
+        {/* Top gradient line on hover */}
+        <div className="absolute top-0 left-0 right-0 h-0.5 gradient-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-      {/* Image */}
-      <div className="relative h-48 overflow-hidden bg-bg shrink-0">
-        {photo ? (
-          <LazyImage
-            src={photo}
-            alt={`${firstName}'s campaign`}
-            revealBlur
-            revealScale
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          />
-        ) : (
-          <div className="w-full h-full gradient-dark flex items-center justify-center">
-            <Heart size={48} className="text-white/20" fill="currentColor" />
+        {/* Image — campaign photos are free-form uploads, so a fixed h-48 in a
+            ~430px column (2.22:1) sliced a third off every photo. */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-bg shrink-0">
+          {photo ? (
+            <LazyImage
+              src={cld.cover(photo)}
+              alt={`${firstName}'s campaign`}
+              revealBlur
+              revealScale
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            />
+          ) : (
+            <div className="w-full h-full gradient-dark flex items-center justify-center">
+              <Heart size={48} className="text-white/20" fill="currentColor" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-navy/10 to-transparent" />
+
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            {campaign.doctorVerified && (
+              <span className="flex items-center gap-1 bg-green text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                <Shield size={9} /> Verified
+              </span>
+            )}
+            {isComplete && (
+              <span className="flex items-center gap-1 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                <CheckCircle size={9} /> Funded
+              </span>
+            )}
           </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-navy/10 to-transparent" />
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {campaign.doctorVerified && (
-            <span className="flex items-center gap-1 bg-green text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-              <Shield size={9} /> Verified
+          {/* Status pill */}
+          <div className="absolute top-3 right-3">
+            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg ${
+              campaign.status === 'active'    ? 'bg-green/90 text-white' :
+              campaign.status === 'completed' ? 'bg-navy/80 text-white'  :
+              'bg-primary/90 text-white'
+            }`}>
+              {campaign.status === 'active' ? '🟢 Active' : campaign.status === 'completed' ? '✓ Completed' : 'Open'}
             </span>
-          )}
-          {isComplete && (
-            <span className="flex items-center gap-1 bg-primary text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-              <CheckCircle size={9} /> Funded
-            </span>
-          )}
+          </div>
         </div>
 
-        {/* Status pill */}
-        <div className="absolute top-3 right-3">
-          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg ${
-            campaign.status === 'active'    ? 'bg-green/90 text-white' :
-            campaign.status === 'completed' ? 'bg-navy/80 text-white'  :
-            'bg-primary/90 text-white'
-          }`}>
-            {campaign.status === 'active' ? '🟢 Active' : campaign.status === 'completed' ? '✓ Completed' : 'Open'}
-          </span>
+        {/* Content */}
+        <div className="flex flex-col flex-1 p-5 gap-3">
+          <div>
+            <h3 className="text-sm font-extrabold text-navy leading-tight group-hover:text-primary transition-colors mb-1">
+              Help {firstName} fight {campaign.diagnosis}
+            </h3>
+            {campaign.hospital && (
+              <p className="text-[11px] text-text-secondary font-medium">{campaign.hospital}</p>
+            )}
+          </div>
+
+          {campaign.patientStory && (
+            <p className="text-[12px] text-text-secondary leading-relaxed line-clamp-2">
+              {campaign.patientStory.replace(/<[^>]*>/g, '').slice(0, 130)}…
+            </p>
+          )}
+
+          <ProgressBar raised={campaign.amountRaised ?? 0} goal={campaign.estimatedCost ?? 1} />
+
+          {/* Raised / Goal */}
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-text-secondary">Goal: <span className="font-bold text-navy">₹{(campaign.estimatedCost ?? 0).toLocaleString('en-IN')}</span></span>
+            {(campaign.updates?.length ?? 0) > 0 && (
+              <span className="text-text-secondary">{campaign.updates!.length} update{campaign.updates!.length > 1 ? 's' : ''}</span>
+            )}
+          </div>
+
+          {/* CTAs */}
+          <div className="flex gap-2 pt-1">
+            <Link
+              href={`/patient-assistance/${campaign.slug ?? campaign.id}`}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-[12px] text-white gradient-primary
+                hover:opacity-90 transition-opacity shadow-[0_4px_14px_rgba(21,101,216,0.28)] active:scale-95"
+            >
+              <Heart size={12} fill="currentColor" /> Donate Now
+            </Link>
+            <Link
+              href={`/patient-assistance/${campaign.slug ?? campaign.id}`}
+              className="px-3 py-2.5 rounded-xl font-bold text-[12px] border border-border text-text-secondary
+                hover:border-primary hover:text-primary transition-all active:scale-95"
+            >
+              Story
+            </Link>
+          </div>
         </div>
       </div>
-
-      {/* Content */}
-      <div className="flex flex-col flex-1 p-5 gap-3">
-        <div>
-          <h3 className="text-sm font-extrabold text-navy leading-tight group-hover:text-primary transition-colors mb-1">
-            Help {firstName} fight {campaign.diagnosis}
-          </h3>
-          {campaign.hospital && (
-            <p className="text-[11px] text-text-secondary font-medium">{campaign.hospital}</p>
-          )}
-        </div>
-
-        {campaign.patientStory && (
-          <p className="text-[12px] text-text-secondary leading-relaxed line-clamp-2">
-            {campaign.patientStory.replace(/<[^>]*>/g, '').slice(0, 130)}…
-          </p>
-        )}
-
-        <ProgressBar raised={campaign.amountRaised ?? 0} goal={campaign.estimatedCost ?? 1} />
-
-        {/* Raised / Goal */}
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-text-secondary">Goal: <span className="font-bold text-navy">₹{(campaign.estimatedCost ?? 0).toLocaleString('en-IN')}</span></span>
-          {(campaign.updates?.length ?? 0) > 0 && (
-            <span className="text-text-secondary">{campaign.updates!.length} update{campaign.updates!.length > 1 ? 's' : ''}</span>
-          )}
-        </div>
-
-        {/* CTAs */}
-        <div className="flex gap-2 pt-1">
-          <Link
-            href={`/patient-assistance/${campaign.slug ?? campaign.id}`}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-[12px] text-white gradient-primary
-              hover:opacity-90 transition-opacity shadow-[0_4px_14px_rgba(21,101,216,0.28)] active:scale-95"
-          >
-            <Heart size={12} fill="currentColor" /> Donate Now
-          </Link>
-          <Link
-            href={`/patient-assistance/${campaign.slug ?? campaign.id}`}
-            className="px-3 py-2.5 rounded-xl font-bold text-[12px] border border-border text-text-secondary
-              hover:border-primary hover:text-primary transition-all active:scale-95"
-          >
-            Story
-          </Link>
-        </div>
-      </div>
-    </div>
+    </Reveal>
   )
 }
 
@@ -233,11 +204,10 @@ interface Props {
 export default function PatientAssistanceClient({ campaigns, settings }: Props) {
   const [filter, setFilter]   = useState<Filter>('all')
   const [search, setSearch]   = useState('')
-  const heroRef               = useRef<HTMLDivElement>(null)
   const [heroVis, setHeroVis] = useState(false)
 
   useEffect(() => {
-    setHeroVis(true) // hero animates on mount
+    setHeroVis(true) // hero is above the fold, so it animates on mount
   }, [])
 
   const filtered = useMemo(() => {
@@ -316,7 +286,6 @@ export default function PatientAssistanceClient({ campaigns, settings }: Props) 
         ))}
 
         <div
-          ref={heroRef}
           className="container-max px-4 md:px-8 relative z-10 text-center"
           style={{
             opacity:   heroVis ? 1 : 0,
@@ -496,7 +465,6 @@ export default function PatientAssistanceClient({ campaigns, settings }: Props) 
 
 // ─── How it works section ─────────────────────────────────────────────────────
 function HowItWorksSection() {
-  const { ref, visible } = useReveal(0.1)
   const steps = [
     { n: '01', title: 'Campaign Submitted',   body: 'Patient or family submits details with medical documents and consent form.' },
     { n: '02', title: 'Doctor Verification',  body: 'Our cardiologist reviews every case and approves only genuine patients.' },
@@ -508,13 +476,7 @@ function HowItWorksSection() {
   return (
     <section className="py-16 md:py-20 bg-bg border-t border-border">
       <div className="container-max px-4 md:px-8">
-        <div ref={ref} className="text-center mb-12"
-          style={{
-            opacity:   visible ? 1 : 0,
-            transform: visible ? 'translateY(0)' : 'translateY(24px)',
-            transition: 'opacity 0.6s ease, transform 0.6s ease',
-          }}
-        >
+        <Reveal effect="fade-up" offset={0.1} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
             <Sparkles size={12} /> How It Works
           </div>
@@ -524,7 +486,7 @@ function HowItWorksSection() {
           <p className="text-text-secondary mt-2 text-base max-w-xl mx-auto">
             Every rupee is tracked and every campaign is doctor-verified. Here&apos;s how your donation creates impact.
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {steps.map((s, i) => <StepCard key={s.n} s={s} i={i} />)}
@@ -534,40 +496,17 @@ function HowItWorksSection() {
   )
 }
 
-// Individual reveal hook for steps (avoids rules-of-hooks in loops)
+// One card per step, each with its own reveal (keeps hooks out of the loop)
 function StepCard({ s, i }: { s: { n: string; title: string; body: string }; i: number }) {
-  const { ref: sRef, visible: sVis } = useRevealStep(i)
   return (
-    <div
-      ref={sRef}
-      className="bg-white rounded-2xl border border-border p-6 hover:shadow-[0_8px_32px_rgba(21,101,216,0.10)] hover:border-primary/20 transition-all duration-300 group"
-      style={{
-        opacity:   sVis ? 1 : 0,
-        transform: sVis ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.97)',
-        transition: `opacity 0.5s ease ${i * 0.08}s, transform 0.5s ease ${i * 0.08}s, box-shadow 0.3s, border-color 0.3s`,
-      }}
-    >
-      <div className="text-3xl font-extrabold text-border group-hover:text-primary/20 transition-colors mb-3 font-mono">
-        {s.n}
+    <Reveal effect="pop-center" delay={i * 80} offset={0.1} className="h-full">
+      <div className="h-full bg-white rounded-2xl border border-border p-6 hover:shadow-[0_8px_32px_rgba(21,101,216,0.10)] hover:border-primary/20 transition-all duration-300 group">
+        <div className="text-3xl font-extrabold text-border group-hover:text-primary/20 transition-colors mb-3 font-mono">
+          {s.n}
+        </div>
+        <h3 className="text-sm font-extrabold text-navy mb-2 group-hover:text-primary transition-colors">{s.title}</h3>
+        <p className="text-[12px] text-text-secondary leading-relaxed">{s.body}</p>
       </div>
-      <h3 className="text-sm font-extrabold text-navy mb-2 group-hover:text-primary transition-colors">{s.title}</h3>
-      <p className="text-[12px] text-text-secondary leading-relaxed">{s.body}</p>
-    </div>
+    </Reveal>
   )
-}
-
-function useRevealStep(index: number) {
-  const ref     = useRef<HTMLDivElement>(null)
-  const [vis, setVis] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect() } },
-      { threshold: 0.1 },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [index])
-  return { ref, visible: vis }
 }

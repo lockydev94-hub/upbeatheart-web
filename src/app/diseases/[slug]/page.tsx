@@ -70,7 +70,9 @@ function stripHtml(html: string) {
 function getCoverUrl(d: Disease) {
   if (!d.coverImage) return null
   const raw = typeof d.coverImage === 'string' ? d.coverImage : d.coverImage.url ?? ''
-  return cloudinaryResize(raw, 1200, 630, 'fill')
+  // Admin crops disease covers to exactly 800×500 (8:5) with the name burned
+  // into the artwork — asking for 16:9 here silently chopped the title off.
+  return cloudinaryResize(raw, 800, 500, 'fill')
 }
 
 function getCoverAlt(d: Disease) {
@@ -383,7 +385,7 @@ export default async function DiseaseDetailPage(
 
               {/* Cover image (full-width on main column) */}
               {coverUrl && (
-                <div className="relative rounded-2xl overflow-hidden mb-8 aspect-video bg-bg shadow-card">
+                <div className="relative rounded-2xl overflow-hidden mb-8 aspect-[8/5] bg-bg shadow-card">
                   <Image src={coverUrl} alt={coverAlt} fill className="object-cover" />
                 </div>
               )}
@@ -713,7 +715,7 @@ export default async function DiseaseDetailPage(
                   const rImg = rd.coverImage
                     ? cloudinaryResize(
                         typeof rd.coverImage === 'string' ? rd.coverImage : rd.coverImage.url ?? '',
-                        480, 260, 'fill'
+                        480, 300, 'fill'
                       )
                     : null
                   return (
@@ -724,11 +726,11 @@ export default async function DiseaseDetailPage(
                         hover:shadow-card-hover hover:-translate-y-0.5 transition-all"
                     >
                       {rImg ? (
-                        <div className="relative h-36 bg-white">
+                        <div className="relative aspect-[8/5] bg-white">
                           <Image src={rImg} alt={rd.title} fill className="object-cover" />
                         </div>
                       ) : (
-                        <div className={`h-36 flex items-center justify-center ${rc.bg}`}>
+                        <div className={`aspect-[8/5] flex items-center justify-center ${rc.bg}`}>
                           <RI className={`w-12 h-12 ${rc.color} opacity-40`} />
                         </div>
                       )}

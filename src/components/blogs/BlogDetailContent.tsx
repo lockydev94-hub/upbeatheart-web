@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Calendar, Tag, Share2, Facebook, Twitter, LinkIcon, CheckCircle, Clock, ChevronRight, Home } from 'lucide-react'
 import type { Blog } from '@/types/firestore'
 import LazyImage from '@/components/ui/LazyImage'
+import { cld } from '@/lib/cloudinary'
 
 interface Props {
   blog: Blog
@@ -124,7 +125,7 @@ export default function BlogDetailContent({ blog, related, settings }: Props) {
       <div className="relative h-[55vh] min-h-[340px] max-h-[520px] overflow-hidden">
         {blog.coverImage ? (
           <LazyImage
-            src={blog.coverImage}
+            src={cld.cover(blog.coverImage)}
             alt={blog.title}
             revealBlur revealScale
             className="absolute inset-0 w-full h-full object-cover"
@@ -187,7 +188,7 @@ export default function BlogDetailContent({ blog, related, settings }: Props) {
               {settings?.doctorPhotoUrl ? (
                 <div className="relative w-14 h-14 rounded-full shrink-0 overflow-hidden border-2 border-primary/20">
                   <LazyImage
-                    src={settings.doctorPhotoUrl}
+                    src={cld.avatarMd(settings.doctorPhotoUrl)}
                     alt={settings.doctorName}
                     revealBlur
                     className="absolute inset-0 w-full h-full object-cover"
@@ -385,10 +386,10 @@ function TOCWidget({ html }: { html: string }) {
 function RelatedCard({ blog }: { blog: Blog }) {
   return (
     <Link href={`/blogs/${blog.slug}`} className="flex items-center gap-3 p-4 hover:bg-bg transition group">
-      <div className="relative w-16 h-14 rounded-xl overflow-hidden shrink-0 bg-bg border border-border">
+      <div className="relative w-20 h-12 rounded-xl overflow-hidden shrink-0 bg-bg border border-border">
         {blog.coverImage ? (
           <LazyImage
-            src={blog.coverImage}
+            src={cld.thumb(blog.coverImage)}
             alt={blog.title}
             revealBlur revealScale
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

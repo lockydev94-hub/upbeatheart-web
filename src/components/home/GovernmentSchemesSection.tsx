@@ -40,7 +40,6 @@
  */
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ShieldCheck,           // ayushman — shield of cover
@@ -51,6 +50,8 @@ import {
   PhoneCall,
   CheckCircle2,
 } from 'lucide-react'
+import useScrollReveal, { type ScrollDirection } from '@/hooks/useScrollReveal'
+import Reveal from '@/components/ui/Reveal'
 
 /* ── Content (editable copy) ──────────────────────────────────────── */
 interface SchemeDef {
@@ -151,26 +152,19 @@ const SCHEMES: SchemeDef[] = [
 ]
 
 /* ── Scroll-reveal hook ──────────────────────────────────────── */
-function useVisible(threshold = 0.08) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [v, setV] = useState(false)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect() } },
-      { threshold },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return { ref, visible: v }
+/**
+ * Replaying scroll trigger. `eagerness` is how far into the viewport the element
+ * must travel before it fires, as a fraction of viewport height.
+ */
+function useVisible(eagerness = 0.08) {
+  return useScrollReveal<HTMLElement>({ offset: eagerness })
 }
 
 /* ── Animated ECG underline (draws on hover) ────────────────── */
 function ECGHoverLine({ color }: { color: string }) {
-  const path = 'M0,12 L18,12 L26,12 L32,4 L38,22 L44,2 L50,20 L56,12 L80,12'
+  const path = 'M0,8 L18,8 L26,8 L32,2.7 L38,14.7 L44,1.3 L50,13.3 L56,8 L80,8'
   return (
-    <svg viewBox="0 0 80 24" className="w-full h-5" aria-hidden>
+    <svg viewBox="0 0 80 16" className="w-full h-4" aria-hidden>
       <polyline
         points={path}
         fill="none"
@@ -193,13 +187,13 @@ function ECGHoverLine({ color }: { color: string }) {
 /* ── Tiny ECG line in header ─────────────────────────────────── */
 function ECGHeader({ active, color = '#1565D8' }: { active: boolean; color?: string }) {
   return (
-    <svg viewBox="0 0 360 36" className="w-full h-9" aria-hidden>
+    <svg viewBox="0 0 360 20" className="w-full h-5" aria-hidden>
       <polyline
-        points="M0,18 L40,18 L52,18 L60,6 L68,32 L76,4 L84,30 L92,18 L110,18"
+        points="M0,10 L40,10 L52,10 L60,3.3 L68,17.8 L76,2.2 L84,16.7 L92,10 L110,10"
         fill="none" stroke={color} strokeWidth="1.4" opacity="0.18"
       />
       <polyline
-        points="M0,18 L40,18 L52,18 L60,6 L68,32 L76,4 L84,30 L92,18 L110,18"
+        points="M0,10 L40,10 L52,10 L60,3.3 L68,17.8 L76,2.2 L84,16.7 L92,10 L110,10"
         fill="none" stroke={color} strokeWidth="2.4"
         strokeLinecap="round" strokeLinejoin="round"
         strokeDasharray="240"
@@ -214,19 +208,21 @@ function ECGHeader({ active, color = '#1565D8' }: { active: boolean; color?: str
 }
 
 /* ── Card ──────────────────────────────────────────────── */
-function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active: boolean }) {
+function SchemeCard({ s, index, active, direction }: {
+  s: SchemeDef; index: number; active: boolean; direction: ScrollDirection
+}) {
   const Icon = s.icon
   const delay = 120 + index * 110
   const glow  = s.accent.glow
 
   return (
-    <article
+    <Reveal
+      as="article"
+      effect="flip-y"
+      delay={delay}
+      visible={active}
+      direction={direction}
       className="group relative h-full"
-      style={{
-        opacity: active ? 1 : 0,
-        transform: active ? 'translateY(0)' : 'translateY(40px)',
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform 0.7s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms`,
-      }}
     >
       <div
         className={`gs-card-${s.id} relative h-full rounded-2xl border border-border bg-white overflow-hidden
@@ -241,9 +237,9 @@ function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active:
           .gs-card-${s.id}:hover { box-shadow: 0 18px 50px ${glow}; }
         `}</style>
 
-        {/* Top hero illustration — animated GIF (16:9) */}
+        {/* Top hero illustration — animated GIF (16:9, assets are 400×225) */}
         <div
-          className={`relative aspect-[16/9] overflow-hidden bg-gradient-to-br ${s.accent.bgFrom} via-white ${s.accent.bgVia}`}
+          className={`relative aspect-video overflow-hidden bg-gradient-to-br ${s.accent.bgFrom} via-white ${s.accent.bgVia}`}
         >
           {/* corner brackets */}
           <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-slate-300 z-10" />
@@ -288,37 +284,37 @@ function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active:
       </div>
 
         {/* Body */}
-        <div className="p-5 pt-4 flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
+        <div className="p-3.5 pt-2.5 flex flex-col gap-1.5">
+          <div className="flex items-start justify-between gap-2.5">
             <div className="min-w-0">
               <p className={`text-[10.5px] font-bold uppercase tracking-[0.14em] ${s.accent.text}`}>
                 {s.subtitle}
             </p>
-              <h3 className="mt-1 text-[16px] font-extrabold text-navy leading-snug group-hover:text-primary transition-colors">
+              <h3 className="mt-0.5 text-[15px] font-extrabold text-navy leading-tight group-hover:text-primary transition-colors">
                 {s.title}
             </h3>
           </div>
             <span
-              className={`shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-white to-slate-50
+              className={`shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-white to-slate-50
                           border border-border flex items-center justify-center
                           ${s.accent.text}
                           group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300
                           shadow-sm`}
             >
-              <Icon size={17} strokeWidth={2.2} />
+              <Icon size={15} strokeWidth={2.2} />
           </span>
         </div>
 
-          <p className="text-[12.5px] text-text-secondary leading-relaxed">{s.blurb}</p>
+          <p className="text-[12px] text-text-secondary leading-snug">{s.blurb}</p>
 
           {/* eligibility chip */}
-          <div className="flex items-center gap-1.5 text-[10.5px] text-text-secondary bg-bg/80 border border-border rounded-md px-2 py-1.5">
+          <div className="flex items-center gap-1.5 text-[10.5px] text-text-secondary bg-bg/80 border border-border rounded-md px-2 py-1">
             <CheckCircle2 size={11} className={s.accent.text} />
             <span>{s.eligible}</span>
         </div>
 
           {/* highlights list */}
-          <ul className="space-y-1.5">
+          <ul className="space-y-1">
             {s.highlights.map((h, i) => (
               <li
                 key={i}
@@ -336,12 +332,12 @@ function SchemeCard({ s, index, active }: { s: SchemeDef; index: number; active:
         </ul>
 
           {/* hover ECG underline */}
-          <div className="mt-2 -mx-1">
+          <div className="-mx-1">
             <ECGHoverLine color={s.accent.bright} />
         </div>
       </div>
     </div>
-  </article>
+  </Reveal>
   )
 }
 
@@ -371,22 +367,22 @@ function EligibilityStrip({ active }: { active: boolean }) {
       </svg>
     </div>
 
-      <div className="px-6 md:px-12 py-9 md:py-12 relative z-10">
-        <div className="flex flex-col md:flex-row items-center gap-7">
+      <div className="px-5 md:px-9 py-4 md:py-5 relative z-10">
+        <div className="flex flex-col md:flex-row items-center gap-5">
           {/* pulsing check icon */}
-          <div className="shrink-0 anim-heartbeat w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shadow-[0_6px_28px_rgba(24,184,230,0.35)]">
-            <ShieldCheck size={30} strokeWidth={2.2} />
+          <div className="shrink-0 anim-heartbeat w-12 h-12 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shadow-[0_6px_28px_rgba(24,184,230,0.35)]">
+            <ShieldCheck size={24} strokeWidth={2.2} />
         </div>
 
           <div className="flex-1 text-center md:text-left">
-            <p className="text-[11px] tracking-[0.2em] uppercase text-cyan-100 font-bold mb-1">
+            <p className="text-[10.5px] tracking-[0.2em] uppercase text-cyan-100 font-bold mb-0.5">
               Not sure if you&rsquo;re covered?
           </p>
-            <h3 className="text-xl md:text-3xl font-extrabold leading-tight">
+            <h3 className="text-lg md:text-2xl font-extrabold leading-tight">
               Let us check your eligibility.{' '}
               <span className="shimmer-text">At no cost</span>
           </h3>
-            <p className="text-white/75 text-sm mt-2 max-w-md mx-auto md:mx-0">
+            <p className="text-white/75 text-[13px] mt-1 max-w-md mx-auto md:mx-0">
               Call our desk with your Aadhaar / CGHS card and we&rsquo;ll tell you exactly what your scheme covers — before your visit.
           </p>
         </div>
@@ -394,7 +390,7 @@ function EligibilityStrip({ active }: { active: boolean }) {
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm bg-white text-navy hover:bg-white/90 hover:-translate-y-0.5 transition-all shadow-[0_6px_24px_rgba(0,0,0,0.25)]"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-white text-navy hover:bg-white/90 hover:-translate-y-0.5 transition-all shadow-[0_6px_24px_rgba(0,0,0,0.25)]"
             >
               <PhoneCall size={15} />
               Talk to us
@@ -402,7 +398,7 @@ function EligibilityStrip({ active }: { active: boolean }) {
           </Link>
             <Link
               href="/appointment"
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-sm border border-white/30 text-white hover:bg-white/10 hover:-translate-y-0.5 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border border-white/30 text-white hover:bg-white/10 hover:-translate-y-0.5 transition-all"
             >
               Book a visit
           </Link>
@@ -416,7 +412,7 @@ function EligibilityStrip({ active }: { active: boolean }) {
 /* ── Tricolor animated top band ────────────────────────────── */
 function TricolorBand({ active }: { active: boolean }) {
   return (
-    <div className="flex w-full h-1.5 rounded-full overflow-hidden bg-slate-100 mb-8 md:mb-10">
+    <div className="flex w-full h-1.5 rounded-full overflow-hidden bg-slate-100 mb-3.5 md:mb-4">
       <div className="h-full bg-orange-500"
            style={{
              width: active ? '33.33%' : '0%',
@@ -438,10 +434,11 @@ function TricolorBand({ active }: { active: boolean }) {
 
 /* ── Main section ─────────────────────────────────── */
 export default function GovernmentSchemesSection() {
-  const { ref, visible } = useVisible(0.05)
+  // Signature effect: header unfolds from the top, then scheme cards flip in on Y.
+  const { ref, visible, direction } = useVisible(0.05)
 
   return (
-    <section ref={ref} className="py-14 md:py-20 bg-white relative overflow-hidden">
+    <section ref={ref} className="pt-6 pb-4 md:pt-7 md:pb-5 bg-white relative overflow-hidden">
       {/* ── Background decorations ── */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
         <div className="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-primary/5 blur-[90px]" />
@@ -463,15 +460,13 @@ export default function GovernmentSchemesSection() {
       </div>
 
         {/* ── Header ── */}
-        <div
-          className="text-center max-w-3xl mx-auto mb-10 md:mb-12"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'scale(1)' : 'scale(0.96)',
-            transition: 'opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1)',
-          }}
+        <Reveal
+          effect="unfold"
+          visible={visible}
+          direction={direction}
+          className="text-center max-w-3xl mx-auto mb-5 md:mb-6"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/6 border border-primary/15 text-primary text-[11px] font-bold uppercase tracking-widest mb-2.5">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
@@ -479,7 +474,7 @@ export default function GovernmentSchemesSection() {
             Support Our Cause
         </div>
 
-          <h2 className="text-2xl md:text-4xl lg:text-[2.6rem] font-extrabold text-navy leading-tight tracking-tight">
+          <h2 className="text-2xl md:text-[1.85rem] lg:text-[2.1rem] font-extrabold text-navy leading-tight tracking-tight">
             Cardiac care made{' '}
             <span
               className="bg-clip-text text-transparent"
@@ -490,25 +485,25 @@ export default function GovernmentSchemesSection() {
             .
         </h2>
 
-          <div className="my-4 max-w-md mx-auto">
+          <div className="mt-1 mb-2 max-w-[22rem] mx-auto">
             <ECGHeader active={visible} color="#18B55A" />
         </div>
 
-          <p className="text-text-secondary text-base md:text-lg leading-relaxed">
+          <p className="text-text-secondary text-sm md:text-[15px] leading-relaxed">
             We accept India&rsquo;s major government and professional-body programs so
             that cost is never the reason you delay a heart check-up.
         </p>
-      </div>
+      </Reveal>
 
         {/* ── Card grid: 4 schemes ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {SCHEMES.map((s, i) => (
-            <SchemeCard key={s.id} s={s} index={i} active={visible} />
+            <SchemeCard key={s.id} s={s} index={i} active={visible} direction={direction} />
           ))}
       </div>
 
         {/* ── Eligibility CTA ── */}
-        <div className="mt-10 md:mt-12">
+        <div className="mt-5 md:mt-6">
           <EligibilityStrip active={visible} />
       </div>
     </div>
